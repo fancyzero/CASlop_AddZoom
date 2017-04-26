@@ -422,7 +422,9 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			this->SetFocus();//设置焦点为当前窗口
 		}
 	}
-	CPoint point_transformed
+
+	point.x /= m_scale;
+	point.y /= m_scale;
 	int x = point.x;
 	int y = point.y;
 	CString crtpoint;
@@ -457,12 +459,15 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 		if (LineHitTest(point))
 		{
 			CRect rc;
-			rc.SetRect(linepoint.x - 12, linepoint.y - 12, linepoint.x + 12, linepoint.y + 12);
+			CPoint p = TransformPoint(linepoint);
+			rc.SetRect(p.x - 12, p.y - 12, p.x + 12, p.y + 12);
 			MemDC.Ellipse(rc);
 		}
 		if (m_pcrt[m_tid] > 0 && !m_drawonelinef){
-			MemDC.MoveTo(m_fjxpoint[m_tid][m_pcrt[m_tid] - 1]);
-			MemDC.LineTo(point);
+			CPoint p = m_fjxpoint[m_tid][m_pcrt[m_tid] - 1];
+			p = TransformPoint(p);
+			MemDC.MoveTo(p);
+			MemDC.LineTo(TransformPoint(point));
 		}
 		break;
 	case 6:
@@ -473,6 +478,8 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			for (int i = 0; i <= k1; i++){//画竖线
 				p1.x = fg[1].x + i*jd_fg; p2.x = p1.x;
 				p1.y = fg[1].y; p2.y = point.y;
+				p1 = TransformPoint(p1);
+				p2 = TransformPoint(p2);
 				MemDC.MoveTo(p1);
 				MemDC.LineTo(p2);
 			}
