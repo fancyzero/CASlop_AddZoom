@@ -40,6 +40,7 @@ BEGIN_MESSAGE_MAP(CSlopeSView, CView)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSEWHEEL()
 	ON_WM_ERASEBKGND()
 	ON_WM_KEYUP()
 	ON_WM_ERASEBKGND()
@@ -78,6 +79,7 @@ END_MESSAGE_MAP()
 CSlopeSView::CSlopeSView()
 {
 	// TODO:  在此处添加构造代码
+	m_scale = 1.0f;
 	FirstFocus = true;
 	m_nDrawType = 0;
 	m_nLineStyle = PS_SOLID;
@@ -168,7 +170,13 @@ CSlopeSDoc* CSlopeSView::GetDocument() const // 非调试版本是内联的
 }
 #endif //_DEBUG
 
-
+CPoint CSlopeSView::TransformPoint(const CPoint& p)
+{
+	CPoint ret;
+	ret.x = p.x * m_scale;
+	ret.y = p.y * m_scale;
+	return ret;
+}
 // CSlopeSView 事件处理函数
 void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 {
@@ -190,6 +198,14 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	//画刷
 	CBrush brush(tuceng[0].clr);
 	//画图
+	CPoint m_nzValues_cp[POINT_COUNT];
+	
+	memcpy(m_nzValues_cp, m_nzValues, sizeof m_nzValues);
+	for (int i = 0; i < m_crt_p; i++)
+	{
+		m_nzValues[i] = TransformPoint(m_nzValues[i]);
+	}
+
 	for (int i = 0; i < m_crt_p; i++)//重画边界线
 	{
 		CPoint point = m_nzValues[i];
@@ -223,10 +239,18 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 		for (int i = 0; i < m_crt_p; i++)
 		{
 			CPoint point = m_nzValues[i];
+			CPoint point2 = m_nzValues_cp[i];
 			CString str;
-			str.Format(_T("(%d ,%d)"), point.x - 320, 510 - point.y);
+			str.Format(_T("(%d ,%d)"), point2.x - 320, 510 - point2.y);
 			MemDC.TextOut(point.x, point.y, str, str.GetLength());
 		}
+	}
+	CPoint m_fjxpoint_cp[POINT_COUNT][POINT_COUNT];
+	for (int i = 0; i < POINT_COUNT; i++)
+		for (int j = 0; j < POINT_COUNT; j++)
+	{
+			m_fjxpoint_cp[i][j] = m_fjxpoint[i][j];
+			m_fjxpoint[i][j] =  TransformPoint(m_fjxpoint[i][j]);
 	}
 	for (int i = 0; i <= m_tid; i++)//重画材料线
 	{
@@ -371,6 +395,14 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	DeleteObject(pencu);
 	DeleteObject(brush);
 	DeleteObject(brushjx);
+	memcpy(m_nzValues, m_nzValues_cp, sizeof m_nzValues);
+	for (int i = 0; i < POINT_COUNT; i++)
+	{
+		for (int j = 0; j < POINT_COUNT; j++)
+		{
+			m_fjxpoint[i][j] = m_fjxpoint_cp[i][j];
+		}
+	}
 }
 
 void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
@@ -390,6 +422,7 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			this->SetFocus();//设置焦点为当前窗口
 		}
 	}
+	CPoint point_transformed
 	int x = point.x;
 	int y = point.y;
 	CString crtpoint;
@@ -517,7 +550,12 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 	GetParent()->GetDescendantWindow(AFX_IDW_STATUS_BAR)->SetWindowText(crtpoint);
 	CView::OnMouseMove(nFlags, point);
 }
-
+BOOL CSlopeSView::OnMouseWheel(UINT f, short d, CPoint p)
+{
+	m_scale += d/1200.0f;
+	this->Invalidate();
+	return CView::OnMouseWheel(f, d, p);
+}
 void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	if (point.y >= 612) return;
