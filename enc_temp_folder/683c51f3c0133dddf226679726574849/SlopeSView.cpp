@@ -327,7 +327,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//ÖØ»­»úÖÆ£¨Ë«»º³å£©
 		{
 			CPoint point = m_nzValues[i];
 			CString str;
-			str.Format(_T("(%d ,%d)"), point.x - 320, 510 - point.y);
+			str.Format(_T("(%d ,%d)"), point.x, point.y);
 			MemDC.TextOut(point.x, point.y, str, str.GetLength());
 		}
 	}
