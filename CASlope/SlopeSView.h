@@ -210,7 +210,7 @@ public:
 	};
 
 	//方格搜索
-	struct fgss {
+	struct stfgss {
 		struct point p[10];		//与边界线的交点
 		int cnt;				//点的个数
 		int qytks;
@@ -229,6 +229,7 @@ public:
 	
 	CPoint TransformPoint(const CPoint& p);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	void DoLButtonUp(CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
 	bool  CSlopeSView::PointHitTest(CPoint origin, CPoint point);

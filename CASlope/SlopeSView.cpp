@@ -80,8 +80,8 @@ CSlopeSView::CSlopeSView()
 {
 	// TODO:  ÔÚ´Ë´¦Ìí¼Ó¹¹Ôì´úÂë
 	m_scale = 1.0f;
-	m_translateX = 320;
-	m_translateY = 610;
+	m_translateX =  320;
+	m_translateY =  610;
 	m_off_x = 0;
 	m_off_y = 0;
 	FirstFocus = true;
@@ -415,13 +415,23 @@ void CSlopeSView::OnDraw(CDC* pDC)//ÖØ»­»úÖÆ£¨Ë«»º³å£©
 		//»­ÑÕÉ«
 		for (i = 0; i < totfg; i++)
 		{
-			if (fgss[i].k >= 6)continue;
+			if (fgss[i].k >= 6)
+				continue;
 			p0 = fgss[i].p0;
 			COLORREF clr = (int)(fgss[i].k / 6 * 16777215);
 			clr = rgbcolor[(int)(clr / (16777215.0 / 24.0))];
 			CBrush gzbrush(clr);
 			MemDC.m_DC.SelectObject(gzbrush);
-			MemDC.ExtFloodFill(p0.x, p0.y, RGB(255, 255, 255), FLOODFILLSURFACE);
+			RECT rc;
+			rc.left = p0.x-jd_fg/2+1;
+			rc.top = p0.y - jd_fg / 2+1;
+			rc.bottom = p0.y + jd_fg / 2-1;
+			rc.right = p0.x + jd_fg / 2-1;
+			static bool draw_method = false;
+			if (draw_method)
+				MemDC.FillSolidRect(&rc, clr);
+			else
+				MemDC.ExtFloodFill(p0.x, p0.y, RGB(255, 255, 255), FLOODFILLSURFACE);
 			DeleteObject(gzbrush);
 		}
 		i = minkid;
@@ -617,9 +627,9 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			//crtpoint.Format(_T("(X = %d , Y = %d)   K = %1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].k);
 
 			if (fgss[n].qytks>0 && fgss[n].qytks <= tks)
-				crtpoint.Format(_T("(X = %d , Y = %d) °ë¾¶£º%1.4f  °²È«ÏµÊý£º%1.4f Ç£ÒýÌõ¿éÊýÎª£º%d"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].bj, fgss[n].k, fgss[n].qytks);
+				crtpoint.Format(_T("(X = %.2f , Y = %.2f) °ë¾¶£º%1.4f  °²È«ÏµÊý£º%1.4f Ç£ÒýÌõ¿éÊýÎª£º%d"), x - m_translateX, (y <= 610 ? m_translateY - y : -100.0), fgss[n].bj, fgss[n].k, fgss[n].qytks);
 			else
-				crtpoint.Format(_T("(X = %d , Y = %d) °ë¾¶£º%1.4f  °²È«ÏµÊý£º%1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].bj, fgss[n].k);
+				crtpoint.Format(_T("(X = %.2f , Y = %.2f) °ë¾¶£º%1.4f  °²È«ÏµÊý£º%1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100.0), fgss[n].bj, fgss[n].k);
 
 			if (fgss[n].k == 10000)break;
 
@@ -640,9 +650,9 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 		}
 		else
 			if (fgss[minkid].qytks>0 && fgss[minkid].qytks <= tks)
-				crtpoint.Format(_T("(X = %d , Y = %d) °ë¾¶£º%.2f  °²È«ÏµÊý£º%1.4f Ç£ÒýÌõ¿éÊýÎª£º%d"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[minkid].bj, fgss[minkid].k, fgss[minkid].qytks);
+				crtpoint.Format(_T("(X = %.2f, Y = %.2f) °ë¾¶£º%.2f  °²È«ÏµÊý£º%1.4f Ç£ÒýÌõ¿éÊýÎª£º%d"), x - m_translateX, (y <= 610 ? m_translateY - y : -100.0), fgss[minkid].bj, fgss[minkid].k, fgss[minkid].qytks);
 			else
-				crtpoint.Format(_T("(X = %d , Y = %d) °ë¾¶£º%.2f  °²È«ÏµÊý£º%1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[minkid].bj, fgss[minkid].k);
+				crtpoint.Format(_T("(X = %.2f , Y = %.2f) °ë¾¶£º%.2f  °²È«ÏµÊý£º%1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100.0), fgss[minkid].bj, fgss[minkid].k);
 		break;
 	}
 	ReleaseDC(pDC);//ÊÍ·ÅpDC
@@ -658,21 +668,20 @@ BOOL CSlopeSView::OnMouseWheel(UINT f, short d, CPoint p)
 	CPoint saved_point = p;
 	ScreenToClient(&p);
 	m_scale += d/120.0f;
-	if (m_scale < 0.2)
-		m_scale = 0.2;
-
+	if (m_scale < 1)
+		m_scale = 1;
+	if (m_scale > 20)
+		m_scale = 20;
 	m_off_x = p.x / m_scale + m_off_x - p.x / olds;
 	m_off_y = p.y / m_scale + m_off_y - p.y / olds;
 
 	this->Invalidate();
 	return CView::OnMouseWheel(f, d, saved_point);
 }
-void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
+
+
+void CSlopeSView::DoLButtonUp(CPoint point)
 {
-	CPoint saved_point = point;
-	point.x = point.x / m_scale - m_off_x;
-	point.y = point.y / m_scale - m_off_y;
-	if (point.y >= 612) return;
 	CDC* pDC = GetDC();//ÐÂ½¨pDC
 	switch (m_nDrawType)
 	{
@@ -683,14 +692,17 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 		break;
 
 	case 2://ÕâÊ±»æ³öÁËµÚi¸öµã£¨i>1£©
-		if (bihe || point == m_nzValues[0])//»­³öµÄ±ß½ç±ÕºÏ
+	{
+		float epsilon = 0.1;
+		bool veryclose = epsilon > (point.x - m_nzValues[0].x)*(point.x - m_nzValues[0].x) + (point.y - m_nzValues[0].y)*(point.y - m_nzValues[0].y);
+		if (bihe || veryclose)//»­³öµÄ±ß½ç±ÕºÏ
 		{
 			bihe = true;
 			m_nzValues[m_crt_p] = m_nzValues[0];
 			m_crt_p++;//¹²m_crt_p¸öµã£¬´Ó m_nzValues[0]µ½ m_nzValues[m_crt_p-1];
 			m_nDrawType = 3;//»­Íê±ß½çÍ¼ÁË
 			SetClassLong(this->GetSafeHwnd(), GCL_HCURSOR, (LONG)LoadCursor(NULL, IDC_ARROW));//±ê×¼¹â±ê
-			if (!FirstFocus){
+			if (!FirstFocus) {
 				CEdit* pedit = &m_EditPoint;
 				pedit->ShowWindow(SW_HIDE);
 			}
@@ -698,11 +710,12 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 			m_bDraw[1] = true;
 
 		}
-		else{
+		else {
 			if (xybz) point = xypoint;
 			m_nzValues[m_crt_p] = point;
 			m_crt_p++;
 		}
+	}
 		break;
 
 	case 4://²ÄÁÏÏß
@@ -738,7 +751,7 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 	case 6://·½¸ñ
 		if (crt_fg == 0)
 			fg[++crt_fg] = point;
-		else if (crt_fg == 1){
+		else if (crt_fg == 1) {
 			fg[++crt_fg] = point;
 			m_bDraw[3] = true;
 			m_bDraw[2] = false;//Íâ¼Ó
@@ -748,7 +761,7 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 
 	case 8:
 		HRGN rg = CreatePolygonRgn(m_nzValues, m_crt_p, WINDING);
-		struct fgss  &cntfg = fgss[fgid];
+		struct stfgss  &cntfg = fgss[fgid];
 		if (cntfg.ptStart.x < point.x && point.x < cntfg.ptEnd.x && PtInRegion(rg, point.x, point.y))
 		{
 			if (sqrt((point.x - cntfg.p0.x)*(point.x - cntfg.p0.x) + (point.y - cntfg.p0.y)*(point.y - cntfg.p0.y)) < cntfg.bj)
@@ -756,7 +769,7 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 				tkid = (int)((point.x - cntfg.ptStart.x)*1.0 / (cntfg.ptEnd.x - cntfg.ptStart.x)* tks);
 			}
 		}
-		else if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y){
+		else if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y) {
 			CPoint p1, p2, p0;
 			double x0 = point.x - fg[1].x; int i = (int)x0 / jd_fg;//µÚiÁÐ
 			double y0 = point.y - fg[1].y; int j = (int)y0 / jd_fg;//µÚjÁÐ
@@ -775,7 +788,21 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 	}
 	OnDraw(pDC);
 	ReleaseDC(pDC);
-	CView::OnLButtonUp(nFlags, saved_point);
+}
+
+void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	if (point.y >= 612) return;
+	CPoint mpt;
+	mpt.x = point.x / m_scale - m_off_x;
+	mpt.y = point.y / m_scale - m_off_y;
+	DoLButtonUp(mpt);
+
+	//point.x = point.x / m_scale - m_off_x;
+	//point.y = point.y / m_scale - m_off_y;
+	
+	
+	CView::OnLButtonUp(nFlags, point);
 }
 
 void CSlopeSView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)//°´ÏÂ¼ü´¥·¢ÊÂ¼þ
@@ -851,9 +878,9 @@ void CSlopeSView::OnRButtonUp(UINT /* nFlags */, CPoint point)//ÓÒ¼üÊÂ¼þ
 		//ÎªµÚÒ»¸öÏîÉèÖÃÍ¼±ê
 		pSubMenu->SetMenuItemBitmaps(0, MF_BYPOSITION, &m_bitmap1, &m_bitmap1);
 		// ½«×ø±êÖµÓÉ¿Í»§×ø±ê×ª»»ÎªÆÁÄ»×ø±ê 
-		ClientToScreen(&point);
+		ClientToScreen(&saved_point);
 		// µ¯³öÓÒ¼ü²Ëµ¥£¬²Ëµ¥×ó²àÓëpoint.x×ø±êÖµ¶ÔÆë   
-		pSubMenu->TrackPopupMenu(TPM_LEFTALIGN, point.x, point.y, this);
+		pSubMenu->TrackPopupMenu(TPM_LEFTALIGN, saved_point.x, saved_point.y, this);
 	}
 	else if (PtInRegion(rg, point.x, point.y) && m_nDrawType >= 5)//Ìí¼Ó·Ö½çÏß&&Ñ¡ÔñÍÁ²ã²ÎÊý
 	{
@@ -892,8 +919,8 @@ void CSlopeSView::OnRButtonUp(UINT /* nFlags */, CPoint point)//ÓÒ¼üÊÂ¼þ
 			m_bitmap[k].SetBitmapBits(bitmapSize, px);
 			pSubMenu1->SetMenuItemBitmaps(k, MF_BYPOSITION, &m_bitmap[k], &m_bitmap[k]);
 		}
-		ClientToScreen(&point);
-		pSubMenu->TrackPopupMenu(TPM_LEFTALIGN, point.x, point.y, this);
+		ClientToScreen(&saved_point);
+		pSubMenu->TrackPopupMenu(TPM_LEFTALIGN, saved_point.x, saved_point.y, this);
 	}
 }
 
@@ -905,8 +932,9 @@ void CSlopeSView::OnRButtonUp(UINT /* nFlags */, CPoint point)//ÓÒ¼üÊÂ¼þ
 bool  CSlopeSView::PointHitTest(CPoint origin, CPoint point)//¼ì²âº¯Êý,²¶×½±ÕºÏµã
 {
 	CRect rc;
-	rc.SetRect(origin.x - 5, origin.y - 5, origin.x + 5, origin.y + 5);//ÒÔpointÎªÖÐÐÄ½¨±ß³¤Îª10µÄ¾ØÐÎ;
-	if (rc.PtInRect(point)){//¼ì²âoriginÊÇ·ñÔÚ½¨Á¢µÄ¾ØÐÎÄÚ;
+	float dist = 5.0 / m_scale;
+	if( sqrt((origin.x - point.x)*(origin.x - point.x) + (origin.y - point.y)*(origin.y - point.y)) < dist)
+	{
 		bihe = true;
 		return true;
 	}
@@ -916,14 +944,17 @@ bool  CSlopeSView::PointHitTest(CPoint origin, CPoint point)//¼ì²âº¯Êý,²¶×½±ÕºÏµ
 //¼ì²âº¯Êý,XYÖá¶ÔÏó²¶×½
 bool  CSlopeSView::XYHitTest(CPoint origin, CPoint point)
 {
-	if (origin.x - point.x <= 5 && origin.x - point.x >= -5) 
+	float d = 5 / m_scale;
+	if (d < 1)
+		d = 0;
+	if (origin.x - point.x <= d && origin.x - point.x >= -d) 
 	{
 		xypoint.x = origin.x;
 		xypoint.y = point.y;
 		xybz = true;
 		return true;
 	}
-	else if (origin.y - point.y <= 5 && origin.y - point.y >= -5)
+	else if (origin.y - point.y <= d && origin.y - point.y >= -d)
 	{
 		xypoint.y = origin.y;
 		xypoint.x = point.x;
@@ -937,11 +968,12 @@ bool  CSlopeSView::XYHitTest(CPoint origin, CPoint point)
 //¼ì²âº¯Êý,²¶×½ÊÇ·ñ¿¿½ü±ß½çÏß
 bool  CSlopeSView::LineHitTest(CPoint point)
 {
+	float capture_radius = 5.0 / m_scale;
 	for (int i = 0; i < m_crt_p - 1; i++)//¿¿½ü±ß½ç¹Õµã
 	{
 		CPoint p = m_nzValues[i];
 		double d = sqrt((p.x - point.x) *(p.x - point.x) + (p.y - point.y)*(p.y - point.y));
-		if (d < 5.0 && d>-5.0)
+		if (d < capture_radius && d>-capture_radius)
 		{
 			linepoint.x = p.x;
 			linepoint.y = p.y;
@@ -963,7 +995,7 @@ bool  CSlopeSView::LineHitTest(CPoint point)
 		if (m_pcrt[m_tid]>0){//²ÉÓÃÊó±êµãÑÓ³¤ÏßÓë±ß½çÏà½»µÄ·½Ê½
 			m1 = m_fjxpoint[m_tid][m_pcrt[m_tid] - 1]; m2 = point;
 			a2 = m2.y - m1.y; b2 = m1.x - m2.x; c2 = m2.x*m1.y - m2.y*m1.x;//a2,b2,c2Îª²ÄÁÏÏßÊý¾Ý
-			if (d < 5.0 && d>-5.0 && rc.PtInRect(point)){//¿¿½üÁË±ß½çÏß
+			if (d < capture_radius && d>-capture_radius && rc.PtInRect(point)){//¿¿½üÁË±ß½çÏß
 				if (b1 == 0){//±ß½çÏßÐ±ÂÊÎªÎÞÇî´ó,k1=ÎÞÇî
 					k2 = -a2 / b2; ju2 = a2*m1.x*1.0 / b2 + m1.y;
 					linepoint.x = p1.x;
@@ -1022,7 +1054,7 @@ bool  CSlopeSView::LineHitTest(CPoint point)
 		}
 		else{//Ëù»­µÄµÚÒ»¸öµã£¬²ÉÓÃ´ÓÊó±êµãÏò±ß½çÏß×ö´¹ÏßµÄ·½Ê½
 
-			if (d < 5.0 && d>-5.0 && rc.PtInRect(point)){
+			if (d < capture_radius && d>-capture_radius && rc.PtInRect(point)){
 				if (b1 == 0){
 					linepoint.x = p1.x;
 					linepoint.y = point.y;
@@ -1045,6 +1077,9 @@ bool  CSlopeSView::LineHitTest(CPoint point)
 //ÓÒ¼ü²¶×½²ÄÁÏÏß
 int  CSlopeSView::MLHitTest(CPoint point)
 {
+	float capture_radius = 5.0/m_scale;
+
+
 	for (int i = 0; i <= m_tid; i++)//µÚiÌõµÚjµã
 	{
 		for (int j = 0; j < m_pcrt[i] - 1; j++)
@@ -1058,7 +1093,7 @@ int  CSlopeSView::MLHitTest(CPoint point)
 			rc.SetRect(x1 - 5, y1 - 5, x2 + 5, y2 + 5);//×ó£¬ÏÂ£¬ÓÒ£¬ÉÏ
 			a1 = p2.y - p1.y; b1 = p1.x - p2.x; c1 = p2.x*p1.y - p2.y*p1.x;
 			d = (a1*point.x + b1*point.y + c1) / sqrt(a1*a1 + b1*b1);
-			if (d < 5.0 && d>-5.0 && rc.PtInRect(point)) return i;
+			if (d < capture_radius && d>-capture_radius && rc.PtInRect(point)) return i;
 		}
 	}
 	return -1;
@@ -1250,11 +1285,10 @@ BOOL CSlopeSView::PreTranslateMessage(MSG* pMsg)
 				{//µãÔÚÓÃ»§½çÃæÇø
 					//x - m_translateX, m_translateY - y 
 					x += m_translateX; y = m_translateY - y;
-					x = (x + m_off_x)*m_scale;
-					y = (y + m_off_y)*m_scale;
+					DoLButtonUp(CPoint(x, y));
 					//str.Format(_T("x=%d,y=%d"), x, y);
 					//AfxMessageBox(str);//µ¯³öÏûÏ¢
-					::SendMessage(m_hWnd, WM_LBUTTONUP, 0, MAKELONG(x, y));//Ä£ÄâÊó±ê×ó¼ü
+					//::SendMessage(m_hWnd, WM_LBUTTONUP, 0, MAKELONG(x, y));//Ä£ÄâÊó±ê×ó¼ü
 				}
 				else
 					AfxMessageBox(_T("Çë×¢ÒâÊäÈë·¶Î§: -m_translateX<=x<=1042, -100<=y<=m_translateY "));
@@ -1269,7 +1303,7 @@ BOOL CSlopeSView::PreTranslateMessage(MSG* pMsg)
 
 //Ñ°ÕÒ½»µã
 void CSlopeSView::FindAllCrossPoint(int n, CPoint p0, double bj){
-	struct fgss  &cntfg = fgss[n];
+	struct stfgss  &cntfg = fgss[n];
 	for (int i = 0; i < m_crt_p - 1; i++)
 	{//1.ÕÒÔ²ÐÄÎªp0,°ë¾¶ÎªbjµÄÔ²Óë±ß½çµÄ½»µã
 		if ((i == bianjie[0] && bianjie[0] != -1) || (i == bianjie[1] && bianjie[1] != -1) || (i == bianjie[2] && bianjie[2] != -1))
@@ -1321,7 +1355,7 @@ void CSlopeSView::FindAllCrossPoint(int n, CPoint p0, double bj){
 }
 //¶ÔÃ¿¶ÎÔ²»¡½øÐÐ¼ÆËã
    void CSlopeSView::Calculate(int n, int f, CPoint p0, double bj, CDC* pDC){
-	struct fgss  &cntfg = fgss[n];
+	struct stfgss  &cntfg = fgss[n];
 	struct point &start = cntfg.p[f];//¿ªÊ¼µã£¨°´ÄæÊ±ÕëµÃµ½µÄ£©
 	struct point &end = cntfg.p[f + 1];//½áÊøµã
 
@@ -1981,12 +2015,12 @@ void CSlopeSView::OnSearch()
 	dlg.tiaokuaishu = tks;
 	dlg.check1 = check1;
 	if (IDOK == dlg.DoModal()){
-		if (dlg.bianchang>5 && dlg.bianchang <= 20)
+		if (dlg.bianchang>1 && dlg.bianchang <= 20)
 			jd_fg = dlg.bianchang;
-		else jd_fg = 5;
-		if (dlg.banjing>3 && dlg.banjing <= 20)
+		else jd_fg = 1;
+		if (dlg.banjing>1 && dlg.banjing <= 20)
 			jd_yh = dlg.banjing;
-		else jd_yh = 3;
+		else jd_yh = 1;
 		if (dlg.tiaokuaishu>1 && dlg.tiaokuaishu <= 20)
 			tks = dlg.tiaokuaishu;
 		else tks = 10;
@@ -2086,9 +2120,9 @@ void CSlopeSView::OnComt()
 		{
 			int n = j*(k1 + 1) + i;//ËÑË÷µ½µÚn¸öÐ¡·½¸ñ
 			totfg++;
-			struct fgss  &cntfg = fgss[n];//ÒýÓÃ
-			struct fgss  &cntfg1 = fgss[n];
-			struct fgss  &cntfg2 = fgss[n];
+			struct stfgss  &cntfg = fgss[n];//ÒýÓÃ
+			struct stfgss  &cntfg1 = fgss[n];
+			struct stfgss  &cntfg2 = fgss[n];
 			cntfg.k = 10000;//ÕâÒ»·½¸ñµÄminK
 			p0.y = (int)(fg[1].y + j*jd_fg + ban);
 			if (j == k2)p0.y = (int)((fg[2].y - fg[1].y - j*jd_fg) / 2.0 + fg[1].y + j*jd_fg);
@@ -2199,7 +2233,7 @@ void CSlopeSView::OnShow()
 
 /*void CSlopeSView::Write()
 {
-	struct fgss  &cntfg = fgss[fgid];
+	struct stfgss  &cntfg = fgss[fgid];
 	CString s0, s1, s2;
 	s0.Format(_T("Ô²ÐÄ(x,y)£º(%d,%d)\r\n°ë¾¶£º%.2f\r\n×îÐ¡°²È«ÏµÊý:%.4f\r\n--------------------------------------------------------------\r\nÌõ¿é%d\r\n--------------------------------------------------------------\r\n"), fgss[fgid].p0.x - m_translateX, m_translateY - fgss[fgid].p0.y, fgss[fgid].bj, fgss[fgid].k, tkid + 1);
 	s1.Format(_T("ÖØÁ¿£º%.2f\r\n¦Á:%.2f¡ã\r\ncos(¦Á)£º%.2f\r\nsin(¦Á)£º%.2f\r\n¼ÓÈ¨Æ½¾ù¦Õ£º%.2f¡ã\r\nÃæ»ý£º%.2f\r\nµ×±ß³¤£º%.2f\r\n"), fgss[fgid].t[tkid].W, fgss[fgid].t[tkid].alf / pi * 180, fgss[fgid].t[tkid].cosa, fgss[fgid].t[tkid].sina, fgss[fgid].t[tkid].fai, fgss[fgid].t[tkid].are, fgss[fgid].t[tkid].line);
@@ -2243,7 +2277,7 @@ void CSlopeSView::OnShow()
 			if (i>0) E[i] += E[i - 1] * cd[i];
 		}
 		s2.Format(_T("--------------------------------------------------------------\r\nÐÂ²»Æ½ºâÍÆÁ¦·¨\r\n--------------------------------------------------------------\r\n´«µÝÏµÊý¦·i£º%.4f\r\n²»Æ½ºâÍÆÁ¦Ei£º%.4f\r\n"), cd[tkid], E[tkid]);
-		break;
+		break;on
 
 	case 5:
 		for (int i = 0; i <= tkid; i++)
@@ -2281,7 +2315,7 @@ void CSlopeSView::OnShow()
 
 void CSlopeSView::Write()
 {
-	struct fgss  &cntfg = fgss[fgid];
+	struct stfgss  &cntfg = fgss[fgid];
 	CString s0, s1, s2, s3;
 	CString ss;
 	s0.Format(_T("Ô²ÐÄ(x,y)£º(%.2f,%.2f)\r\n°ë¾¶£º%.2f\r\n×îÐ¡°²È«ÏµÊý:%.4f\r\n--------------------------------------------------------------\r\nÌõ¿é%d\r\n--------------------------------------------------------------\r\n"),
@@ -2322,7 +2356,7 @@ void CSlopeSView::Write()
 //¶ÔÃ¿¶ÎÔ²»¡½øÐÐ¼ÆËã
 void CSlopeSView::Calculate1(int n, int f, CPoint p0, double bj, CDC* pDC, int txt_num) 
 {
-struct fgss  &cntfg = fgss[n];
+struct stfgss  &cntfg = fgss[n];
 	struct point &start = cntfg.p[f];//¿ªÊ¼µã£¨°´ÄæÊ±ÕëµÃµ½µÄ£©
 	struct point &end = cntfg.p[f + 1];//½áÊøµã
 	MyPoint pp[30][4];	//¼ÇÂ¼Ìõ¿éÉÏËùÓÐµã×ø±ê,ÉÏ×ó,ÉÏÓÒ,ÏÂÓÒ,ÏÂ×ó
