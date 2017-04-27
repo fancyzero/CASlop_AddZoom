@@ -80,8 +80,8 @@ CSlopeSView::CSlopeSView()
 {
 	// TODO:  在此处添加构造代码
 	m_scale = 1.0f;
-	m_translateX = 320;
-	m_translateY = 512;
+	m_translateX = 0;// 320;
+	m_translateY = 0;//510;
 	m_off_x = 0;
 	m_off_y = 0;
 	FirstFocus = true;
@@ -491,7 +491,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	CPen penjx(m_nLineStyle, 1, RGB(225, 225, 255));
 	MemDC.m_DC.SelectObject(&brushjx);
 	MemDC.m_DC.SelectObject(&penjx);
-	MemDC.Rectangle(CRect(0, 610, 1362, 635));
+	MemDC.m_DC.Rectangle(CRect(0, 610, 1362, 635));
 	DeleteObject(penp);
 	DeleteObject(penbh);
 	DeleteObject(penl);
@@ -674,12 +674,16 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 }
 BOOL CSlopeSView::OnMouseWheel(UINT f, short d, CPoint p)
 {
+	float olds = m_scale;
+	
 	CPoint saved_point = p;
-	m_scale += d/1200.0f;
-	//p.x = p.x / m_scale - m_off_x;
-	//p.y = p.y / m_scale - m_off_y;
-	m_off_x = p.x - p.x* m_scale;
-	m_off_y = p.y - p.y * m_scale;
+	ScreenToClient(&p);
+	m_scale += d/120.0f;
+	if (m_scale < 0.2)
+		m_scale = 0.2;
+
+	m_off_x = p.x / m_scale + m_off_x - p.x / olds;
+	m_off_y = p.y / m_scale + m_off_y - p.y / olds;
 
 	this->Invalidate();
 	return CView::OnMouseWheel(f, d, saved_point);
@@ -845,6 +849,10 @@ void CSlopeSView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)//按下键触发事件
 void CSlopeSView::OnRButtonUp(UINT /* nFlags */, CPoint point)//右键事件
 {
 	RButtonUp = point;
+	CPoint saved_point = point;
+	point.x = point.x / m_scale - m_off_x;
+	point.y = point.y / m_scale - m_off_y;
+
 	CMenu menu;       // 菜单（包含主菜单栏和子菜单）   
 	CMenu *pSubMenu; CMenu *pSubMenu1; // 右键菜单   
 	CBitmap m_bitmap1, m_bitmap2, m_bitmap[20];//位图（图标）
