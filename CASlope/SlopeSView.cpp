@@ -40,6 +40,7 @@ BEGIN_MESSAGE_MAP(CSlopeSView, CView)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSEWHEEL()
 	ON_WM_ERASEBKGND()
 	ON_WM_KEYUP()
 	ON_WM_ERASEBKGND()
@@ -78,6 +79,11 @@ END_MESSAGE_MAP()
 CSlopeSView::CSlopeSView()
 {
 	// TODO:  在此处添加构造代码
+	m_scale = 1.0f;
+	m_translateX = 0;
+	m_translateY = 0;
+	m_off_x = 100;
+	m_off_y = 100;
 	FirstFocus = true;
 	m_nDrawType = 0;
 	m_nLineStyle = PS_SOLID;
@@ -169,6 +175,86 @@ CSlopeSDoc* CSlopeSView::GetDocument() const // 非调试版本是内联的
 #endif //_DEBUG
 
 
+class CScalableDC 
+{
+public:
+	float m_Scale;
+	float m_off_x;
+	float m_off_y;
+	CDC& m_DC;
+	CScalableDC(CDC& pdc)
+		:m_DC(pdc)
+	{
+		m_Scale = 1.0f;
+		m_off_x = 0;
+		m_off_y = 0;
+	}
+
+	CPoint MoveTo(MyPoint point)
+	{
+		point.x = (point.x + m_off_x) *m_Scale;
+		point.y = (point.y + m_off_y)* m_Scale;
+		return m_DC.MoveTo(point);
+	}
+	BOOL LineTo(MyPoint point)
+	{
+		point.x = (point.x + m_off_x) *m_Scale;
+		point.y = (point.y + m_off_y) * m_Scale;
+		return m_DC.LineTo(point);
+	}
+	void FillSolidRect(LPCRECT lpRect, COLORREF clr)
+	{
+		RECT rc = *lpRect;
+		rc.left = (rc.left +m_off_x)*m_Scale;
+		rc.right = (rc.right + m_off_x)*m_Scale;
+		rc.top = (rc.top + m_off_y)*m_Scale;
+		rc.bottom = (rc.bottom + m_off_y)*m_Scale;
+		m_DC.FillSolidRect(&rc, clr);
+	}
+	BOOL ExtFloodFill(int x, int y, COLORREF crColor, UINT nFillType)
+	{
+		return m_DC.ExtFloodFill((x + m_off_x)*m_Scale, (y + m_off_y)*m_Scale, crColor, nFillType);
+	}
+
+	BOOL Rectangle(LPCRECT lpRect)
+	{
+		RECT rc = *lpRect;
+		rc.left = (rc.left + m_off_x)*m_Scale;
+		rc.right = (rc.right + m_off_x)*m_Scale;
+		rc.top = (rc.top + m_off_y)*m_Scale;
+		rc.bottom = (rc.bottom + m_off_y)*m_Scale;
+
+		return m_DC.Rectangle(&rc);
+	}
+	BOOL TextOut(int x, int y, LPCTSTR lpszString, int nCount)
+	{
+		return m_DC.TextOutW((x + m_off_x)*m_Scale, (y + m_off_y)*m_Scale, lpszString, nCount);
+	}
+
+	BOOL Ellipse(int x1, int y1, int x2, int y2)
+	{
+		return m_DC.Ellipse((x1 + m_off_x)*m_Scale, (y1 + m_off_y)*m_Scale, (x2 + m_off_x)*m_Scale, (y2 + m_off_y)*m_Scale);
+	}
+
+	BOOL Ellipse(LPCRECT lpRect)
+	{
+		RECT rc = *lpRect;
+		rc.left = (rc.left + m_off_x)*m_Scale;
+		rc.right = (rc.right + m_off_x)*m_Scale;
+		rc.top = (rc.top + m_off_y)*m_Scale;
+		rc.bottom = (rc.bottom + m_off_y)*m_Scale;
+		return m_DC.Ellipse(&rc);
+	}
+};
+
+
+CPoint CSlopeSView::TransformPoint(const CPoint& p)
+{
+	CPoint ret;
+	ret.x = (p.x + m_off_x) * m_scale;
+	ret.y = (p.y + m_off_y) * m_scale;
+	return ret;
+}
 // CSlopeSView 事件处理函数
 void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 {
@@ -176,11 +262,16 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	ASSERT_VALID(pDoc);
 
 	CMemDC dcMem(*pDC, this);
-	CDC&  MemDC = dcMem.GetDC();
+	CDC& d = dcMem.GetDC();
+	CScalableDC MemDC(d);
+	MemDC.m_Scale = m_scale;
+	MemDC.m_off_x = m_off_x;
+	MemDC.m_off_y = m_off_y;
 
+	
 	CRect   rect;
 	GetClientRect(&rect);
-	MemDC.FillSolidRect(&rect, RGB(255, 255, 255));//将背景填白pDC->GetBkColor()
+	MemDC.m_DC.FillSolidRect(&rect, RGB(255, 255, 255));//将背景填白pDC->GetBkColor()
 	//画笔
 	CPen penp(m_nLineStyle, m_nLineWidth, m_clrp);
 	CPen penbh(m_nLineStyle, 4, RGB(128, 128, 128));
@@ -190,33 +281,51 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	//画刷
 	CBrush brush(tuceng[0].clr);
 	//画图
+	//CPoint m_nzValues_cp[POINT_COUNT];
+	//
+	//memcpy(m_nzValues_cp, m_nzValues, sizeof m_nzValues);
+	//for (int i = 0; i < m_crt_p; i++)
+	//{
+	//	m_nzValues[i] = TransformPoint(m_nzValues[i]);
+	//}
+
 	for (int i = 0; i < m_crt_p; i++)//重画边界线
 	{
 		CPoint point = m_nzValues[i];
 		MemDC.MoveTo(point);
-		MemDC.SelectObject(&penp);
-		if (bihe)MemDC.SelectObject(&penl);
-		MemDC.LineTo(point.x + 5, point.y); //*绘制点
-		MemDC.LineTo(point.x - 5, point.y);
-		MemDC.MoveTo(point);
-		MemDC.LineTo(point.x, point.y + 5);
-		MemDC.LineTo(point.x, point.y - 5);
-		MemDC.MoveTo(point);
-		MemDC.SelectObject(&penl);
-		if (bihe)MemDC.SelectObject(&penbh);
+		MemDC.m_DC.SelectObject(&penp);
+		if (bihe)MemDC.m_DC.SelectObject(&penl);
+		int cross_size = (5 / m_scale) ;
+		if (cross_size <= 0)
+			cross_size = 1;
+		MemDC.LineTo(MyPoint(point.x + cross_size, point.y)); //*绘制点
+		MemDC.LineTo(MyPoint(point.x - cross_size, point.y));
+		MemDC.MoveTo(MyPoint(point));
+		MemDC.LineTo(MyPoint(point.x, point.y + cross_size));
+		MemDC.LineTo(MyPoint(point.x, point.y - cross_size));
+		MemDC.MoveTo(MyPoint(point));
+		MemDC.m_DC.SelectObject(&penl);
+		if (bihe)MemDC.m_DC.SelectObject(&penbh);
 		if (i<m_crt_p - 1)MemDC.LineTo(m_nzValues[i + 1]);//*绘制线
 	}
 
 	//填充黄色
 	if (bihe) 
 	{
-		MemDC.SelectObject(brush);
-		HRGN rg = CreatePolygonRgn(m_nzValues, m_crt_p, WINDING);
-		FillRgn(MemDC, rg, brush);
+		MemDC.m_DC.SelectObject(brush);
+		CPoint m_nzValues_t[POINT_COUNT];
+		
+		memcpy(m_nzValues_t, m_nzValues, sizeof m_nzValues);
+		for (int i = 0; i < m_crt_p; i++)
+		{
+			m_nzValues_t[i] = TransformPoint(m_nzValues_t[i]);
+		}
+		HRGN rg = CreatePolygonRgn(m_nzValues_t, m_crt_p, WINDING);
+		FillRgn(MemDC.m_DC, rg, brush);
 		DeleteObject(rg);
 	}
 
-	MemDC.SetBkMode(TRANSPARENT);//设置文字背景透明
+	MemDC.m_DC.SetBkMode(TRANSPARENT);//设置文字背景透明
 	//显示坐标点文字（x,y）
 	if (m_nDrawType >= 1 && m_nDrawType <= 3)
 	{
@@ -224,34 +333,44 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 		{
 			CPoint point = m_nzValues[i];
 			CString str;
-			str.Format(_T("(%d ,%d)"), point.x - 320, 510 - point.y);
+			str.Format(_T("(%d ,%d)"),int( point.x - m_translateX), int(m_translateY - point.y));
 			MemDC.TextOut(point.x, point.y, str, str.GetLength());
 		}
 	}
+	//CPoint m_fjxpoint_cp[POINT_COUNT][POINT_COUNT];
+	//for (int i = 0; i < POINT_COUNT; i++)
+	//	for (int j = 0; j < POINT_COUNT; j++)
+	//{
+	//		m_fjxpoint_cp[i][j] = m_fjxpoint[i][j];
+	//		m_fjxpoint[i][j] =  TransformPoint(m_fjxpoint[i][j]);
+	//}
 	for (int i = 0; i <= m_tid; i++)//重画材料线
 	{
 		for (int j = 0; j < m_pcrt[i]; j++)//第i条第j点
 		{
 			CPoint point = m_fjxpoint[i][j];
 			MemDC.MoveTo(point);
-			MemDC.SelectObject(&penl);
-			MemDC.LineTo(point.x + 5, point.y); //*绘制点
-			MemDC.LineTo(point.x - 5, point.y);
-			MemDC.MoveTo(point);
-			MemDC.LineTo(point.x, point.y + 5);
-			MemDC.LineTo(point.x, point.y - 5);
-			MemDC.MoveTo(point);
-			if (m_tfinish[i])MemDC.SelectObject(&penfinish);
+			MemDC.m_DC.SelectObject(&penl);
+			int cross_size = (5 / m_scale);
+			if (cross_size <= 0)
+				cross_size = 1;
+			MemDC.LineTo(MyPoint(point.x + cross_size, point.y)); //*绘制点
+			MemDC.LineTo(MyPoint(point.x - cross_size, point.y));
+			MemDC.MoveTo(MyPoint(point));
+			MemDC.LineTo(MyPoint(point.x, point.y + cross_size));
+			MemDC.LineTo(MyPoint(point.x, point.y - cross_size));
+			MemDC.MoveTo(MyPoint(point));
+			if (m_tfinish[i])MemDC.m_DC.SelectObject(&penfinish);
 			if (j<m_pcrt[i] - 1)MemDC.LineTo(m_fjxpoint[i][j + 1]);
 		}
 	}
 	for (int i = 1; i <= tc_step; i++)//重自定义填充
 	{
 		CBrush tcbrush(tianchong[i].clr);
-		MemDC.SelectObject(tcbrush);
+		MemDC.m_DC.SelectObject(tcbrush);
 		CPoint point = tianchong[i].point;
 
-		HDC hDC = MemDC.GetSafeHdc(); //获取屏幕DC
+		HDC hDC = MemDC.m_DC.GetSafeHdc(); //获取屏幕DC
 
 		// 再获取当前点位置像素值  
 		COLORREF color = ::GetPixel(hDC, point.x, point.y);
@@ -262,7 +381,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	//重画方格
 	if (crt_fg == 2)
 	{
-		MemDC.SelectObject(&penl);
+		MemDC.m_DC.SelectObject(&penl);
 		CPoint p1, p2;
 		double dx = fg[2].x - fg[1].x; int k1 = (int)dx / jd_fg;
 		double dy = fg[2].y - fg[1].y; int k2 = (int)dy / jd_fg;
@@ -305,7 +424,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			COLORREF clr = (int)(fgss[i].k / 6 * 16777215);
 			clr = rgbcolor[(int)(clr / (16777215.0 / 24.0))];
 			CBrush gzbrush(clr);
-			MemDC.SelectObject(gzbrush);
+			MemDC.m_DC.SelectObject(gzbrush);
 			MemDC.ExtFloodFill(p0.x, p0.y, RGB(255, 255, 255), FLOODFILLSURFACE);
 			DeleteObject(gzbrush);
 		}
@@ -316,28 +435,28 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 		MemDC.LineTo(fgss[i].ptStart);
 		MemDC.MoveTo(p0);
 		MemDC.LineTo(fgss[i].ptEnd);
-		HDC hDC = MemDC.GetSafeHdc();
+		HDC hDC = MemDC.m_DC.GetSafeHdc();
 		Arc(hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
 		if (fgid != minkid)
 		{
 			i = fgid;
 			p0 = fgss[i].p0;
 			bj = fgss[i].bj;
-			MemDC.SelectObject(&pencu);
+			MemDC.m_DC.SelectObject(&pencu);
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[i].ptStart);
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[i].ptEnd);
 			Arc(hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
 		}
-		MemDC.SelectObject(&penl);
+		MemDC.m_DC.SelectObject(&penl);
 		for (int j = 1; j < tks; j++)
 		{
 			CPoint p1, p2;
 			if (j == fgss[i].qytks)
 			{
 				CPen pentkqy(m_nLineStyle, 2, RGB(255, 0, 0));
-				MemDC.SelectObject(&pentkqy);
+				MemDC.m_DC.SelectObject(&pentkqy);
 				int x = fgss[i].ptStart.x + (fgss[i].ptEnd.x - fgss[i].ptStart.x) / tks*j;
 				p1.x = x; p2.x = x;
 				p1.y = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
@@ -347,7 +466,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			}
 			else
 			{
-				MemDC.SelectObject(&penl);
+				MemDC.m_DC.SelectObject(&penl);
 				int x = fgss[i].ptStart.x + (fgss[i].ptEnd.x - fgss[i].ptStart.x) / tks*j;
 				p1.x = x; p2.x = x;
 				p1.y = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
@@ -360,8 +479,8 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	}
 	CBrush brushjx(RGB(0, 128, 225));//蓝色
 	CPen penjx(m_nLineStyle, 1, RGB(225, 225, 255));
-	MemDC.SelectObject(&brushjx);
-	MemDC.SelectObject(&penjx);
+	MemDC.m_DC.SelectObject(&brushjx);
+	MemDC.m_DC.SelectObject(&penjx);
 	MemDC.Rectangle(CRect(0, 610, 1362, 635));
 	DeleteObject(penp);
 	DeleteObject(penbh);
@@ -371,6 +490,14 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	DeleteObject(pencu);
 	DeleteObject(brush);
 	DeleteObject(brushjx);
+	//memcpy(m_nzValues, m_nzValues_cp, sizeof m_nzValues);
+	//for (int i = 0; i < POINT_COUNT; i++)
+	//{
+	//	for (int j = 0; j < POINT_COUNT; j++)
+	//	{
+	//		m_fjxpoint[i][j] = m_fjxpoint_cp[i][j];
+	//	}
+	//}
 }
 
 void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
@@ -390,27 +517,36 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			this->SetFocus();//设置焦点为当前窗口
 		}
 	}
-	int x = point.x;
-	int y = point.y;
+	CPoint saved_point = point;
+	MyPoint pt(point);
+	pt.x = pt.x / m_scale - m_off_x;
+	pt.y = pt.y / m_scale - m_off_y;
+	float x = pt.x;
+	float y = pt.y;
 	CString crtpoint;
-	crtpoint.Format(_T("(X = %d , Y = %d)"), x - 320, (y <= 610 ? 510 - y : -100));
+	crtpoint.Format(_T("(X = %f , Y = %f)"), x , (y <= 610 ? m_translateY - y : -100));
 	//绘图 （双缓存）
 	CDC* pDC = GetDC();
 	OnDraw(pDC);
-	CDC&  MemDC = *pDC;
+	CDC&  dcMemDC = *pDC;
+	CScalableDC MemDC(dcMemDC);
+	MemDC.m_Scale = m_scale;
+	MemDC.m_off_x = m_off_x;
+	MemDC.m_off_y = m_off_y;
 	//得到黑色画笔
 	CPen penl(m_nLineStyle, m_nLineWidth, m_clrl);
 	CPen pencu(m_nLineStyle, 2, RGB(255, 0, 128));
 	//得到透明的画刷
 	CBrush *pbrush = CBrush::FromHandle((HBRUSH)GetStockObject(NULL_BRUSH));
-	MemDC.SelectObject(&penl);
-	MemDC.SelectObject(pbrush);
+	MemDC.m_DC.SelectObject(&penl);
+	MemDC.m_DC.SelectObject(pbrush);
 	switch (m_nDrawType){
 	case 2:
 		//判断是否接近起点（形成闭合区域）
 		if (m_crt_p>2 && PointHitTest(m_nzValues[0], point)){
 			CRect rc;
-			rc.SetRect(m_nzValues[0].x - 12, m_nzValues[0].y - 12, m_nzValues[0].x + 12, m_nzValues[0].y + 12);
+			float radius = 12 / m_scale;
+			rc.SetRect(m_nzValues[0].x - radius, m_nzValues[0].y - radius, m_nzValues[0].x + radius, m_nzValues[0].y + radius);
 			MemDC.Ellipse(rc);
 		}
 		else if (m_crt_p > 0 && XYHitTest(m_nzValues[m_crt_p - 1], point)){
@@ -418,17 +554,21 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 		}
 		//实时跟踪鼠标位置(连线至鼠标)
 		MemDC.MoveTo(m_nzValues[m_crt_p - 1]);
-		MemDC.LineTo(point);
+		MemDC.LineTo(pt);
 		break;
 	case 4:
 		if (LineHitTest(point))
 		{
 			CRect rc;
-			rc.SetRect(linepoint.x - 12, linepoint.y - 12, linepoint.x + 12, linepoint.y + 12);
+			CPoint p = (linepoint);
+			float radius = 12 / m_scale;
+			rc.SetRect(p.x - radius, p.y - radius, p.x + radius, p.y + radius);
 			MemDC.Ellipse(rc);
 		}
 		if (m_pcrt[m_tid] > 0 && !m_drawonelinef){
-			MemDC.MoveTo(m_fjxpoint[m_tid][m_pcrt[m_tid] - 1]);
+			CPoint p = m_fjxpoint[m_tid][m_pcrt[m_tid] - 1];
+
+			MemDC.MoveTo(p);
 			MemDC.LineTo(point);
 		}
 		break;
@@ -440,6 +580,8 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			for (int i = 0; i <= k1; i++){//画竖线
 				p1.x = fg[1].x + i*jd_fg; p2.x = p1.x;
 				p1.y = fg[1].y; p2.y = point.y;
+				p1 = (p1);
+				p2 = (p2);
 				MemDC.MoveTo(p1);
 				MemDC.LineTo(p2);
 			}
@@ -460,7 +602,7 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 	case 7:
 		if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y){
 			CPoint p1, p2;
-			MemDC.SelectObject(&pencu);
+			MemDC.m_DC.SelectObject(&pencu);
 			double dx = (point.x - fg[1].x)*1.0; int k1 = (int)dx / jd_fg;
 			double dy = (point.y - fg[1].y)*1.0; int k2 = (int)dy / jd_fg;
 			p1.x = fg[1].x + jd_fg*k1; p1.y = fg[1].y + jd_fg*k2;
@@ -473,19 +615,19 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 	case 8:
 		if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y){
 			CPoint p1, p2, p0;
-			MemDC.SelectObject(&pencu);
+			MemDC.m_DC.SelectObject(&pencu);
 			double x0 = point.x - fg[1].x; int i = (int)x0 / jd_fg;//第i列
 			double y0 = point.y - fg[1].y; int j = (int)y0 / jd_fg;//第j列
 			double dx = fg[2].x - fg[1].x; int k1 = (int)dx / jd_fg;//共k1+1列小方格
 			double dy = fg[2].y - fg[1].y; int k2 = (int)dy / jd_fg;//共k2+1行小方格
 			int n = j*(k1 + 1) + i;//第n个方格
 
-			//crtpoint.Format(_T("(X = %d , Y = %d)   K = %1.4f"), x - 320, (y <= 610 ? 510 - y : -100), fgss[n].k);
+			//crtpoint.Format(_T("(X = %d , Y = %d)   K = %1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].k);
 
 			if (fgss[n].qytks>0 && fgss[n].qytks <= tks)
-				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%1.4f  安全系数：%1.4f 牵引条块数为：%d"), x - 320, (y <= 610 ? 510 - y : -100), fgss[n].bj, fgss[n].k, fgss[n].qytks);
+				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%1.4f  安全系数：%1.4f 牵引条块数为：%d"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].bj, fgss[n].k, fgss[n].qytks);
 			else
-				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%1.4f  安全系数：%1.4f"), x - 320, (y <= 610 ? 510 - y : -100), fgss[n].bj, fgss[n].k);
+				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%1.4f  安全系数：%1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].bj, fgss[n].k);
 
 			if (fgss[n].k == 10000)break;
 
@@ -501,25 +643,33 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			MemDC.LineTo(fgss[n].ptStart);
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[n].ptEnd);
-			HDC hDC = MemDC.GetSafeHdc();
+			HDC hDC = MemDC.m_DC.GetSafeHdc();
 			Arc(hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[n].ptStart.x, fgss[n].ptStart.y, fgss[n].ptEnd.x, fgss[n].ptEnd.y);
 		}
 		else
 			if (fgss[minkid].qytks>0 && fgss[minkid].qytks <= tks)
-				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%.2f  安全系数：%1.4f 牵引条块数为：%d"), x - 320, (y <= 610 ? 510 - y : -100), fgss[minkid].bj, fgss[minkid].k, fgss[minkid].qytks);
+				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%.2f  安全系数：%1.4f 牵引条块数为：%d"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[minkid].bj, fgss[minkid].k, fgss[minkid].qytks);
 			else
-				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%.2f  安全系数：%1.4f"), x - 320, (y <= 610 ? 510 - y : -100), fgss[minkid].bj, fgss[minkid].k);
+				crtpoint.Format(_T("(X = %d , Y = %d) 半径：%.2f  安全系数：%1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[minkid].bj, fgss[minkid].k);
 		break;
 	}
 	ReleaseDC(pDC);//释放pDC
 
 	// 在状态栏的当前点窗格中显示点坐标字符串
 	GetParent()->GetDescendantWindow(AFX_IDW_STATUS_BAR)->SetWindowText(crtpoint);
-	CView::OnMouseMove(nFlags, point);
+	CView::OnMouseMove(nFlags, saved_point);
 }
-
+BOOL CSlopeSView::OnMouseWheel(UINT f, short d, CPoint p)
+{
+	m_scale += d/1200.0f;
+	this->Invalidate();
+	return CView::OnMouseWheel(f, d, p);
+}
 void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 {
+	CPoint saved_point = point;
+	point.x = point.x / m_scale - m_off_x;
+	point.y = point.y / m_scale - m_off_y;
 	if (point.y >= 612) return;
 	CDC* pDC = GetDC();//新建pDC
 	switch (m_nDrawType)
@@ -623,7 +773,7 @@ void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 	}
 	OnDraw(pDC);
 	ReleaseDC(pDC);
-	CView::OnLButtonUp(nFlags, point);
+	CView::OnLButtonUp(nFlags, saved_point);
 }
 
 void CSlopeSView::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)//按下键触发事件
@@ -1092,14 +1242,16 @@ BOOL CSlopeSView::PreTranslateMessage(MSG* pMsg)
 				int y = _wtoi(str2);
 				if (x >= 0 && x <= 1362 && y >= 0 && y <= 610)
 				{//点在用户界面区
-					//x - 320, 510 - y 
-					x += 320; y = 510 - y;
+					//x - m_translateX, m_translateY - y 
+					x += m_translateX; y = m_translateY - y;
+					x = (x + m_off_x)*m_scale;
+					y = (y + m_off_y)*m_scale;
 					//str.Format(_T("x=%d,y=%d"), x, y);
 					//AfxMessageBox(str);//弹出消息
 					::SendMessage(m_hWnd, WM_LBUTTONUP, 0, MAKELONG(x, y));//模拟鼠标左键
 				}
 				else
-					AfxMessageBox(_T("请注意输入范围: -320<=x<=1042, -100<=y<=510 "));
+					AfxMessageBox(_T("请注意输入范围: -m_translateX<=x<=1042, -100<=y<=m_translateY "));
 				pedit->SetWindowText(_T(""));
 			}
 			else
@@ -2043,7 +2195,7 @@ void CSlopeSView::OnShow()
 {
 	struct fgss  &cntfg = fgss[fgid];
 	CString s0, s1, s2;
-	s0.Format(_T("圆心(x,y)：(%d,%d)\r\n半径：%.2f\r\n最小安全系数:%.4f\r\n--------------------------------------------------------------\r\n条块%d\r\n--------------------------------------------------------------\r\n"), fgss[fgid].p0.x - 320, 510 - fgss[fgid].p0.y, fgss[fgid].bj, fgss[fgid].k, tkid + 1);
+	s0.Format(_T("圆心(x,y)：(%d,%d)\r\n半径：%.2f\r\n最小安全系数:%.4f\r\n--------------------------------------------------------------\r\n条块%d\r\n--------------------------------------------------------------\r\n"), fgss[fgid].p0.x - m_translateX, m_translateY - fgss[fgid].p0.y, fgss[fgid].bj, fgss[fgid].k, tkid + 1);
 	s1.Format(_T("重量：%.2f\r\nα:%.2f°\r\ncos(α)：%.2f\r\nsin(α)：%.2f\r\n加权平均φ：%.2f°\r\n面积：%.2f\r\n底边长：%.2f\r\n"), fgss[fgid].t[tkid].W, fgss[fgid].t[tkid].alf / pi * 180, fgss[fgid].t[tkid].cosa, fgss[fgid].t[tkid].sina, fgss[fgid].t[tkid].fai, fgss[fgid].t[tkid].are, fgss[fgid].t[tkid].line);
 	double fenzi = 0, fenmu = 0;
 	double E[30], cd[30];
@@ -2127,7 +2279,7 @@ void CSlopeSView::Write()
 	CString s0, s1, s2, s3;
 	CString ss;
 	s0.Format(_T("圆心(x,y)：(%d,%d)\r\n半径：%.2f\r\n最小安全系数:%.4f\r\n--------------------------------------------------------------\r\n条块%d\r\n--------------------------------------------------------------\r\n"),
-		fgss[fgid].p0.x - 320, 510 - fgss[fgid].p0.y, fgss[fgid].bj, fgss[fgid].k, tkid + 1);
+		fgss[fgid].p0.x - m_translateX, m_translateY - fgss[fgid].p0.y, fgss[fgid].bj, fgss[fgid].k, tkid + 1);
 	//	s1.Format(_T("重量：%.2f\r\nα:%.2f°\r\ncos(α)：%.2f\r\nsin(α)：%.2f\r\n加权平均φ：%.2f°\r\n面积：%.2f\r\n底边长：%.2f\r\n"), fgss[fgid].t[tkid].W, fgss[fgid].t[tkid].alf / pi * 180, fgss[fgid].t[tkid].cosAlpha, fgss[fgid].t[tkid].sinAlpha, fgss[fgid].t[tkid].fai, fgss[fgid].t[tkid].are, fgss[fgid].t[tkid].line);
 	s1.Format(_T("重量：%.2f\r\nα:%.2f°\r\ncos(α)：%.2f\r\nsin(α)：%.2f\r\n加权平均φ：%.2f°\r\n面积：%.2f\r\n底边长：%.2f\r\n"),
 		fgss[fgid].t[tkid].W, fgss[fgid].t[tkid].alf / pi * 180, fgss[fgid].t[tkid].cosa, fgss[fgid].t[tkid].sina, fgss[fgid].t[tkid].fai, fgss[fgid].t[tkid].are, fgss[fgid].t[tkid].line);

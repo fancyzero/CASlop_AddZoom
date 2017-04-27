@@ -11,6 +11,7 @@
 
 using namespace std;
 
+
 //自定义数据结构
 class MyPoint
 {
@@ -36,6 +37,20 @@ public:
 	MyPoint operator -(MyPoint point) const
 	{
 		return MyPoint(x - point.x, y - point.y);
+	}
+
+	MyPoint(const POINT& p)
+	{
+		x = p.x;
+		y = p.y;
+	}
+
+	operator POINT()
+	{
+		POINT pt;
+		pt.x = x;
+		pt.y = y;
+		return pt;
 	}
 };
 
@@ -113,14 +128,13 @@ protected:
 	afx_msg void OnFilePrintPreview();
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 
-
 public:
 	afx_msg void OnNewEb();
 public:
 	int rgbcolor[25];
 	bool FirstFocus;
 	UINT m_nDrawType;
-	CPoint m_nzValues[POINT_COUNT];
+	MyPoint m_nzValues[POINT_COUNT];
 	int  m_crt_p;//边界的点数统计
 	int m_nLineWidth;
 	int m_nLineStyle;
@@ -141,6 +155,12 @@ public:
 	bool xybz;
 	bool bihe;
 	bool Linebz;
+	float m_scale;
+	float m_translateX;
+	float m_translateY;
+	float m_off_x;
+	float m_off_y;
+
 	bool m_bDraw[20];//控制菜单开关
 	int m_delete_id;//删除材料线id
 	int bianjie[5];//边界id
@@ -206,6 +226,8 @@ public:
 	double bishop, bph;
 	int check1;
 public:
+	
+	CPoint TransformPoint(const CPoint& p);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
@@ -229,6 +251,7 @@ public:
 
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnNewM();
+	afx_msg BOOL OnMouseWheel(UINT f, short d, CPoint p);
 	afx_msg void OnUpdateNewEb(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateNewM(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateAddL(CCmdUI *pCmdUI);
