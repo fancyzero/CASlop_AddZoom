@@ -80,8 +80,8 @@ CSlopeSView::CSlopeSView()
 {
 	// TODO:  在此处添加构造代码
 	m_scale = 1.0f;
-	m_translateX = 0;// 320;
-	m_translateY = 0;//510;
+	m_translateX = 320;
+	m_translateY = 610;
 	m_off_x = 0;
 	m_off_y = 0;
 	FirstFocus = true;
@@ -291,14 +291,6 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	//画刷
 	CBrush brush(tuceng[0].clr);
 	//画图
-	//CPoint m_nzValues_cp[POINT_COUNT];
-	//
-	//memcpy(m_nzValues_cp, m_nzValues, sizeof m_nzValues);
-	//for (int i = 0; i < m_crt_p; i++)
-	//{
-	//	m_nzValues[i] = TransformPoint(m_nzValues[i]);
-	//}
-
 	for (int i = 0; i < m_crt_p; i++)//重画边界线
 	{
 		CPoint point = m_nzValues[i];
@@ -347,13 +339,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			MemDC.TextOut(point.x, point.y, str, str.GetLength());
 		}
 	}
-	//CPoint m_fjxpoint_cp[POINT_COUNT][POINT_COUNT];
-	//for (int i = 0; i < POINT_COUNT; i++)
-	//	for (int j = 0; j < POINT_COUNT; j++)
-	//{
-	//		m_fjxpoint_cp[i][j] = m_fjxpoint[i][j];
-	//		m_fjxpoint[i][j] =  TransformPoint(m_fjxpoint[i][j]);
-	//}
+
 	for (int i = 0; i <= m_tid; i++)//重画材料线
 	{
 		for (int j = 0; j < m_pcrt[i]; j++)//第i条第j点
@@ -500,14 +486,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	DeleteObject(pencu);
 	DeleteObject(brush);
 	DeleteObject(brushjx);
-	//memcpy(m_nzValues, m_nzValues_cp, sizeof m_nzValues);
-	//for (int i = 0; i < POINT_COUNT; i++)
-	//{
-	//	for (int j = 0; j < POINT_COUNT; j++)
-	//	{
-	//		m_fjxpoint[i][j] = m_fjxpoint_cp[i][j];
-	//	}
-	//}
+
 }
 
 void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
@@ -2305,8 +2284,8 @@ void CSlopeSView::Write()
 	struct fgss  &cntfg = fgss[fgid];
 	CString s0, s1, s2, s3;
 	CString ss;
-	s0.Format(_T("圆心(x,y)：(%d,%d)\r\n半径：%.2f\r\n最小安全系数:%.4f\r\n--------------------------------------------------------------\r\n条块%d\r\n--------------------------------------------------------------\r\n"),
-		fgss[fgid].p0.x - m_translateX, m_translateY - fgss[fgid].p0.y, fgss[fgid].bj, fgss[fgid].k, tkid + 1);
+	s0.Format(_T("圆心(x,y)：(%.2f,%.2f)\r\n半径：%.2f\r\n最小安全系数:%.4f\r\n--------------------------------------------------------------\r\n条块%d\r\n--------------------------------------------------------------\r\n"),
+		cntfg.p0.x - m_translateX, m_translateY - cntfg.p0.y, cntfg.bj, cntfg.k, tkid + 1);
 	//	s1.Format(_T("重量：%.2f\r\nα:%.2f°\r\ncos(α)：%.2f\r\nsin(α)：%.2f\r\n加权平均φ：%.2f°\r\n面积：%.2f\r\n底边长：%.2f\r\n"), fgss[fgid].t[tkid].W, fgss[fgid].t[tkid].alf / pi * 180, fgss[fgid].t[tkid].cosAlpha, fgss[fgid].t[tkid].sinAlpha, fgss[fgid].t[tkid].fai, fgss[fgid].t[tkid].are, fgss[fgid].t[tkid].line);
 	s1.Format(_T("重量：%.2f\r\nα:%.2f°\r\ncos(α)：%.2f\r\nsin(α)：%.2f\r\n加权平均φ：%.2f°\r\n面积：%.2f\r\n底边长：%.2f\r\n"),
 		fgss[fgid].t[tkid].W, fgss[fgid].t[tkid].alf / pi * 180, fgss[fgid].t[tkid].cosa, fgss[fgid].t[tkid].sina, fgss[fgid].t[tkid].fai, fgss[fgid].t[tkid].are, fgss[fgid].t[tkid].line);
