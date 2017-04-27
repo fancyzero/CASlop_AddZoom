@@ -11,6 +11,7 @@
 
 using namespace std;
 
+
 //自定义数据结构
 class MyPoint
 {
@@ -36,6 +37,20 @@ public:
 	MyPoint operator -(MyPoint point) const
 	{
 		return MyPoint(x - point.x, y - point.y);
+	}
+
+	MyPoint(const POINT& p)
+	{
+		x = p.x;
+		y = p.y;
+	}
+
+	operator POINT()
+	{
+		POINT pt;
+		pt.x = x;
+		pt.y = y;
+		return pt;
 	}
 };
 
@@ -119,7 +134,7 @@ public:
 	int rgbcolor[25];
 	bool FirstFocus;
 	UINT m_nDrawType;
-	CPoint m_nzValues[POINT_COUNT];
+	MyPoint m_nzValues[POINT_COUNT];
 	int  m_crt_p;//边界的点数统计
 	int m_nLineWidth;
 	int m_nLineStyle;
@@ -143,6 +158,8 @@ public:
 	float m_scale;
 	float m_translateX;
 	float m_translateY;
+	float m_off_x;
+	float m_off_y;
 
 	bool m_bDraw[20];//控制菜单开关
 	int m_delete_id;//删除材料线id
