@@ -80,10 +80,10 @@ CSlopeSView::CSlopeSView()
 {
 	// TODO:  在此处添加构造代码
 	m_scale = 1.0f;
-	m_translateX = 0;
-	m_translateY = 0;
-	m_off_x = 100;
-	m_off_y = 100;
+	m_translateX = 320;
+	m_translateY = 512;
+	m_off_x = 0;
+	m_off_y = 0;
 	FirstFocus = true;
 	m_nDrawType = 0;
 	m_nLineStyle = PS_SOLID;
@@ -254,6 +254,16 @@ CPoint CSlopeSView::TransformPoint(const CPoint& p)
 	ret.x = (p.x + m_off_x) * m_scale;
 	ret.y = (p.y + m_off_y) * m_scale;
 	return ret;
+}
+
+
+
+BOOL  ScalableArc(CSlopeSView* view, HDC hdc, _In_ int x1, _In_ int y1, _In_ int x2, _In_ int y2, _In_ int x3, _In_ int y3, _In_ int x4, _In_ int y4)
+{
+	float s = view->m_scale;
+	float ox = view->m_off_x;
+	float oy = view->m_off_y;
+	return Arc(hdc, (x1 + ox) *s, y1*s + oy*s, x2*s + ox*s, y2*s + oy*s, x3*s + ox*s, y3*s + oy*s, x4*s + ox*s, y4*s + oy*s);
 }
 // CSlopeSView 事件处理函数
 void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
@@ -436,7 +446,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 		MemDC.MoveTo(p0);
 		MemDC.LineTo(fgss[i].ptEnd);
 		HDC hDC = MemDC.m_DC.GetSafeHdc();
-		Arc(hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
+		ScalableArc(this, hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
 		if (fgid != minkid)
 		{
 			i = fgid;
@@ -447,7 +457,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			MemDC.LineTo(fgss[i].ptStart);
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[i].ptEnd);
-			Arc(hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
+			ScalableArc(this, hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
 		}
 		MemDC.m_DC.SelectObject(&penl);
 		for (int j = 1; j < tks; j++)
@@ -518,11 +528,14 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 		}
 	}
 	CPoint saved_point = point;
-	MyPoint pt(point);
-	pt.x = pt.x / m_scale - m_off_x;
-	pt.y = pt.y / m_scale - m_off_y;
-	float x = pt.x;
-	float y = pt.y;
+	//MyPoint pt(point);
+	point.x = point.x / m_scale - m_off_x;
+	point.y = point.y / m_scale - m_off_y;
+
+	//pt.x = pt.x / m_scale - m_off_x;
+	//pt.y = pt.y / m_scale - m_off_y;
+	float x = point.x;
+	float y = point.y;
 	CString crtpoint;
 	crtpoint.Format(_T("(X = %f , Y = %f)"), x , (y <= 610 ? m_translateY - y : -100));
 	//绘图 （双缓存）
@@ -554,7 +567,7 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 		}
 		//实时跟踪鼠标位置(连线至鼠标)
 		MemDC.MoveTo(m_nzValues[m_crt_p - 1]);
-		MemDC.LineTo(pt);
+		MemDC.LineTo(point);
 		break;
 	case 4:
 		if (LineHitTest(point))
@@ -644,7 +657,7 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[n].ptEnd);
 			HDC hDC = MemDC.m_DC.GetSafeHdc();
-			Arc(hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[n].ptStart.x, fgss[n].ptStart.y, fgss[n].ptEnd.x, fgss[n].ptEnd.y);
+			ScalableArc(this,hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[n].ptStart.x, fgss[n].ptStart.y, fgss[n].ptEnd.x, fgss[n].ptEnd.y);
 		}
 		else
 			if (fgss[minkid].qytks>0 && fgss[minkid].qytks <= tks)
@@ -661,9 +674,15 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint point)
 }
 BOOL CSlopeSView::OnMouseWheel(UINT f, short d, CPoint p)
 {
+	CPoint saved_point = p;
 	m_scale += d/1200.0f;
+	//p.x = p.x / m_scale - m_off_x;
+	//p.y = p.y / m_scale - m_off_y;
+	m_off_x = p.x - p.x* m_scale;
+	m_off_y = p.y - p.y * m_scale;
+
 	this->Invalidate();
-	return CView::OnMouseWheel(f, d, p);
+	return CView::OnMouseWheel(f, d, saved_point);
 }
 void CSlopeSView::OnLButtonUp(UINT nFlags, CPoint point)
 {

@@ -134,7 +134,7 @@ public:
 	int rgbcolor[25];
 	bool FirstFocus;
 	UINT m_nDrawType;
-	MyPoint m_nzValues[POINT_COUNT];
+	CPoint m_nzValues[POINT_COUNT];
 	int  m_crt_p;//边界的点数统计
 	int m_nLineWidth;
 	int m_nLineStyle;
