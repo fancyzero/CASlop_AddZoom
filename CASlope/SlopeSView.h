@@ -11,7 +11,18 @@
 
 using namespace std;
 
-
+class MyRect
+{
+public:
+	double l;
+	double t;
+	double r;
+	double b;
+	MyRect(double _l, double _t, double _r, double _b)
+		:l(_l),t(_t), r(_r) , b(_b)
+	{
+	}
+};
 //自定义数据结构
 class MyPoint
 {
@@ -22,7 +33,7 @@ public:
 	MyPoint() : x(0), y(0) {}
 	MyPoint(double x, double y) : x(x), y(y) {}
 
-	MyPoint& operator =(CPoint point)
+	MyPoint& operator =(MyPoint point)
 	{
 		this->x = point.x;
 		this->y = point.y;
@@ -45,7 +56,7 @@ public:
 		y = p.y;
 	}
 
-	operator POINT()
+	operator POINT() const
 	{
 		POINT pt;
 		pt.x = x;
@@ -134,7 +145,7 @@ public:
 	int rgbcolor[25];
 	bool FirstFocus;
 	UINT m_nDrawType;
-	CPoint m_nzValues[POINT_COUNT];
+	MyPoint m_nzValues[POINT_COUNT];
 	int  m_crt_p;//边界的点数统计
 	int m_nLineWidth;
 	int m_nLineStyle;
@@ -143,15 +154,15 @@ public:
 	int m_tid;//材料线的条数id
 	int m_tcnt;
 	int m_pcrt[POINT_COUNT];//第m_tid条材料线的点数统计
-	CPoint m_fjxpoint[POINT_COUNT][POINT_COUNT];//第m_tid条的第m_pcrt点为m_fjxpoint[m_tid][m_pcrt[m_tid]]
+	MyPoint m_fjxpoint[POINT_COUNT][POINT_COUNT];//第m_tid条的第m_pcrt点为m_fjxpoint[m_tid][m_pcrt[m_tid]]
 	int toptc[POINT_COUNT], buttomtc[POINT_COUNT];//记录每条材料线上下土层id号
 	int toptcid;//最上层土层id(针对没画材料线时)
 	bool m_tfinish[POINT_COUNT];
 	bool m_drawonelinef;
 	int mode;
-	CPoint xypoint;
-	CPoint linepoint;
-	CPoint RButtonUp;
+	MyPoint xypoint;
+	MyPoint linepoint;
+	MyPoint RButtonUp;
 	bool xybz;
 	bool bihe;
 	bool Linebz;
@@ -177,24 +188,24 @@ public:
 
 	struct tianchong
 	{
-		CPoint point;
+		MyPoint point;
 		int clr;
 	}tianchong[300];
 
 	int tc_step;
-	CPoint crt_tc;
+	MyPoint crt_tc;
 	int crt_fg;
-	CPoint fg[5];
+	MyPoint fg[5];
 	int jd_fg, jd_yh, tks;
 
-	struct point
+	struct pointex
 	{
-		CPoint p;//圆弧与边界线交点的坐标
+		MyPoint p;//圆弧与边界线交点的坐标
 		double ang;//点的极坐标角,圆心为极坐标原点
 		//int nub;//记录这点在哪条边界线上,on line: m_nzValues[nub]~m_nzValues[(nub + 1) % m_crt_p]
 
 		//升序排序时必须写的函数
-		bool operator<(const point &rhs) const
+		bool operator<(const pointex &rhs) const
 		{
 			return   ang < rhs.ang;
 		}
@@ -211,11 +222,11 @@ public:
 
 	//方格搜索
 	struct stfgss {
-		struct point p[10];		//与边界线的交点
+		struct pointex p[10];		//与边界线的交点
 		int cnt;				//点的个数
 		int qytks;
 		double k, bj;			//k值与半径，用于绘图
-		CPoint ptStart, ptEnd, p0;	//用于绘图
+		MyPoint ptStart, ptEnd, p0;	//用于绘图
 		struct tksj t[30];
 		vector<BlockData> allBlockData;	//记录最后迭代所有块的数据结果
 	}fgss[10000];//fgss存每个的可容纳10000个小方格即100行100列
@@ -227,24 +238,24 @@ public:
 	int check1;
 public:
 	
-	CPoint TransformPoint(const CPoint& p);
+	MyPoint TransformPoint(const MyPoint& p);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-	void DoLButtonUp(CPoint point);
+	void DoLButtonUp(MyPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
-	bool  CSlopeSView::PointHitTest(CPoint origin, CPoint point);
-	bool  CSlopeSView::XYHitTest(CPoint origin, CPoint point);
-	bool  CSlopeSView::LineHitTest(CPoint point);
-	int  CSlopeSView::MLHitTest(CPoint point);
+	bool  CSlopeSView::PointHitTest(MyPoint origin, MyPoint point);
+	bool  CSlopeSView::XYHitTest(MyPoint origin, MyPoint point);
+	bool  CSlopeSView::LineHitTest(MyPoint point);
+	int  CSlopeSView::MLHitTest(MyPoint point);
 	double CSlopeSView::GetAng(double x, double y);//(x,y)为相对坐标
 	int CSlopeSView::GetBoundPoint(double x, double y);
-	int CSlopeSView::checkcolor(CPoint p, int sx, CDC* pDC);
-	void CSlopeSView::FindAllCrossPoint(int n, CPoint p0, double bj);
-	void CSlopeSView::Calculate(int n, int f, CPoint p0, double bj, CDC* pDC);
-	void CSlopeSView::Calculate1(int n, int f, CPoint p0, double bj, CDC* pDC,int ii);//new method
+	int CSlopeSView::checkcolor(MyPoint p, int sx, CDC* pDC);
+	void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj);
+	void CSlopeSView::Calculate(int n, int f, MyPoint p0, double bj, CDC* pDC);
+	void CSlopeSView::Calculate1(int n, int f, MyPoint p0, double bj, CDC* pDC,int ii);//new method
 	void CSlopeSView::SetSXtuceng(CDC* pDC);
 	void CSlopeSView::SearchToptcid(int tcid);//针对没画材料线时
-	int CSlopeSView::GetTopTC(CPoint p, CDC* pDC);//针对画了材料线但没交点
+	int CSlopeSView::GetTopTC(MyPoint p, CDC* pDC);//针对画了材料线但没交点
 	void CSlopeSView::Write();
 
 	void CSlopeSView::OnFileOpen();
