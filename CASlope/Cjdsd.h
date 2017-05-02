@@ -21,8 +21,8 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-	int bianchang;
-	int banjing;
+	double bianchang;
+	double banjing;
 	int tiaokuaishu;
 	int check1;
 	CButton m_check1;

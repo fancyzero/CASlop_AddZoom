@@ -166,11 +166,11 @@ public:
 	bool xybz;
 	bool bihe;
 	bool Linebz;
-	float m_scale;
-	float m_translateX;
-	float m_translateY;
-	float m_off_x;
-	float m_off_y;
+	double m_scale;
+	double m_translateX;
+	double m_translateY;
+	double m_off_x;
+	double m_off_y;
 
 	bool m_bDraw[20];//控制菜单开关
 	int m_delete_id;//删除材料线id
@@ -196,7 +196,8 @@ public:
 	MyPoint crt_tc;
 	int crt_fg;
 	MyPoint fg[5];
-	int jd_fg, jd_yh, tks;
+	double jd_fg, jd_yh;
+	int tks;
 
 	struct pointex
 	{
@@ -338,7 +339,6 @@ protected:
 private:
 	void calAngle(MyPoint& A, MyPoint& B, MyPoint& C, double* sina = nullptr, double* cosa = nullptr);		//计算角度<ABC>
 	void calAngle(MyPoint& A, MyPoint& B, double* sinX = nullptr, double* cosX = nullptr, double* sinY = nullptr, double* cosY = nullptr);	//计算AB连线与x轴的夹角<BAx,与y轴的夹角<BAy
-	void calAngle(CPoint& A, CPoint& B, double* sinX = nullptr, double* cosX = nullptr, double* sinY = nullptr, double* cosY = nullptr);	//计算AB连线与x轴的夹角<BAx,与y轴的夹角<BAy
 	int   Sign(double);
 	//变量
 	double ks;		//切向弹簧劲度系数N/m

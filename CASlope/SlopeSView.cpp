@@ -120,7 +120,7 @@ CSlopeSView::CSlopeSView()
 	tuceng[0].gama = 20; tuceng[1].gama = 20;
 	tuceng[0].c = 10; tuceng[1].c = 20;
 	tuceng[0].phi = 12.0; tuceng[1].phi = 18.0;
-	jd_fg = 10; jd_yh = 5; tks = 10; minkid = 0;
+	jd_fg = 10/20.0; jd_yh = 5/20.0; tks = 10; minkid = 0;
 	toptcid = 0;
 	mode = 1;
 	ks=100000;
@@ -226,13 +226,13 @@ public:
 		return m_DC.ExtFloodFill((x + m_off_x)*m_Scale, (y + m_off_y)*m_Scale, crColor, nFillType);
 	}
 
-	BOOL Rectangle(LPCRECT lpRect)
+	BOOL Rectangle(const MyRect& mrc)
 	{
-		RECT rc = *lpRect;
-		rc.left = (rc.left + m_off_x)*m_Scale;
-		rc.right = (rc.right + m_off_x)*m_Scale;
-		rc.top = (rc.top + m_off_y)*m_Scale;
-		rc.bottom = (rc.bottom + m_off_y)*m_Scale;
+		RECT rc ;
+		rc.left = (mrc.l + m_off_x)*m_Scale;
+		rc.right = (mrc.r + m_off_x)*m_Scale;
+		rc.top = (mrc.t + m_off_y)*m_Scale;
+		rc.bottom = (mrc.b + m_off_y)*m_Scale;
 
 		return m_DC.Rectangle(&rc);
 	}
@@ -274,7 +274,7 @@ HRGN MyCreatePolygonRgn(CONST MyPoint *pptl,
 	}
 	return CreatePolygonRgn(pt, cPoint, iMode);
 }
-BOOL  ScalableArc(CSlopeSView* view, HDC hdc, _In_ int x1, _In_ int y1, _In_ int x2, _In_ int y2, _In_ int x3, _In_ int y3, _In_ int x4, _In_ int y4)
+BOOL  ScalableArc(CSlopeSView* view, HDC hdc, _In_ double x1, _In_ double y1, _In_ double x2, _In_ double y2, _In_ double x3, _In_ double y3, _In_ double x4, _In_ double y4)
 {
 	float s = view->m_scale;
 	float ox = view->m_off_x;
@@ -395,8 +395,8 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 	{
 		MemDC.m_DC.SelectObject(&penl);
 		MyPoint p1, p2;
-		double dx = fg[2].x - fg[1].x; int k1 = (int)dx / jd_fg;
-		double dy = fg[2].y - fg[1].y; int k2 = (int)dy / jd_fg;
+		double dx = fg[2].x - fg[1].x; int k1 = (double)dx / jd_fg;
+		double dy = fg[2].y - fg[1].y; int k2 = (double)dy / jd_fg;
 		
 		//画竖线
 		for (int i = 0; i <= k1; i++)
@@ -461,7 +461,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 		MemDC.MoveTo(p0);
 		MemDC.LineTo(fgss[i].ptEnd);
 		HDC hDC = MemDC.m_DC.GetSafeHdc();
-		ScalableArc(this, hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
+		ScalableArc(this, hDC, p0.x - bj, p0.y - bj, p0.x + bj, p0.y + bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
 		if (fgid != minkid)
 		{
 			i = fgid;
@@ -472,7 +472,7 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			MemDC.LineTo(fgss[i].ptStart);
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[i].ptEnd);
-			ScalableArc(this, hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
+			ScalableArc(this, hDC, p0.x - bj, p0.y - bj, p0.x + bj, p0.y + bj, fgss[i].ptStart.x, fgss[i].ptStart.y, fgss[i].ptEnd.x, fgss[i].ptEnd.y);
 		}
 		MemDC.m_DC.SelectObject(&penl);
 		for (int j = 1; j < tks; j++)
@@ -482,9 +482,9 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			{
 				CPen pentkqy(m_nLineStyle, 2, RGB(255, 0, 0));
 				MemDC.m_DC.SelectObject(&pentkqy);
-				int x = fgss[i].ptStart.x + (fgss[i].ptEnd.x - fgss[i].ptStart.x) / tks*j;
+				double x = fgss[i].ptStart.x + (fgss[i].ptEnd.x - fgss[i].ptStart.x) / tks*j;
 				p1.x = x; p2.x = x;
-				p1.y = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
+				p1.y = (double)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
 				p2.y = GetBoundPoint(x, p1.y);
 				MemDC.MoveTo(p1);
 				MemDC.LineTo(p2);
@@ -492,9 +492,9 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 			else
 			{
 				MemDC.m_DC.SelectObject(&penl);
-				int x = fgss[i].ptStart.x + (fgss[i].ptEnd.x - fgss[i].ptStart.x) / tks*j;
+				double x = fgss[i].ptStart.x + (fgss[i].ptEnd.x - fgss[i].ptStart.x) / tks*j;
 				p1.x = x; p2.x = x;
-				p1.y = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
+				p1.y = (double)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
 				p2.y = GetBoundPoint(x, p1.y);
 				MemDC.MoveTo(p1);
 				MemDC.LineTo(p2);
@@ -596,8 +596,8 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint wpoint)
 	case 6:
 		if (crt_fg == 1 && fg[1].x<point.x && fg[1].y<point.y){
 			MyPoint p1, p2;
-			double dx = (point.x - fg[1].x)*1.0; int k1 = (int)dx / jd_fg;
-			double dy = (point.y - fg[1].y)*1.0; int k2 = (int)dy / jd_fg;
+			double dx = (point.x - fg[1].x)*1.0; int k1 = (double)dx / jd_fg;
+			double dy = (point.y - fg[1].y)*1.0; int k2 = (double)dy / jd_fg;
 			for (int i = 0; i <= k1; i++){//画竖线
 				p1.x = fg[1].x + i*jd_fg; p2.x = p1.x;
 				p1.y = fg[1].y; p2.y = point.y;
@@ -621,27 +621,30 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint wpoint)
 		}
 		break;
 	case 7:
-		if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y){
+		if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y)
+		{
 			MyPoint p1, p2;
 			MemDC.m_DC.SelectObject(&pencu);
-			double dx = (point.x - fg[1].x)*1.0; int k1 = (int)dx / jd_fg;
-			double dy = (point.y - fg[1].y)*1.0; int k2 = (int)dy / jd_fg;
+			double dx = (point.x - fg[1].x)*1.0; int k1 = (double)dx / jd_fg;
+			double dy = (point.y - fg[1].y)*1.0; int k2 = (double)dy / jd_fg;
 			p1.x = fg[1].x + jd_fg*k1; p1.y = fg[1].y + jd_fg*k2;
 			p2.x = fg[1].x + jd_fg*(k1 + 1); p2.y = fg[1].y + jd_fg*(k2 + 1);
-			if (p2.x>fg[2].x)p2.x = fg[2].x;
-			if (p2.y>fg[2].y)p2.y = fg[2].y;
-			MemDC.Rectangle(CRect(p1, p2));
+			if (p2.x>fg[2].x)
+				p2.x = fg[2].x;
+			if (p2.y>fg[2].y)
+				p2.y = fg[2].y;
+			MemDC.Rectangle(MyRect(p1.x,p1.y, p2.x,p2.y));
 		}
 		break;
 	case 8:
 		if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y){
 			MyPoint p1, p2, p0;
 			MemDC.m_DC.SelectObject(&pencu);
-			double x0 = point.x - fg[1].x; int i = (int)x0 / jd_fg;//第i列
-			double y0 = point.y - fg[1].y; int j = (int)y0 / jd_fg;//第j列
-			double dx = fg[2].x - fg[1].x; int k1 = (int)dx / jd_fg;//共k1+1列小方格
-			double dy = fg[2].y - fg[1].y; int k2 = (int)dy / jd_fg;//共k2+1行小方格
-			int n = j*(k1 + 1) + i;//第n个方格
+			double x0 = point.x - fg[1].x; int i = x0 / jd_fg;//第i列
+			double y0 = point.y - fg[1].y; int j = y0 / jd_fg;//第j列
+			double dx = fg[2].x - fg[1].x; int k1 = dx / jd_fg;//共k1+1列小方格
+			double dy = fg[2].y - fg[1].y; int k2 = dy / jd_fg;//共k2+1行小方格
+ 			int n = j*(k1 + 1) + i;//第n个方格
 
 			//crtpoint.Format(_T("(X = %d , Y = %d)   K = %1.4f"), x - m_translateX, (y <= 610 ? m_translateY - y : -100), fgss[n].k);
 
@@ -656,7 +659,8 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint wpoint)
 			p2.x = fg[1].x + jd_fg*(i + 1); p2.y = fg[1].y + jd_fg*(j + 1);
 			if (p2.x>fg[2].x)p2.x = fg[2].x;
 			if (p2.y>fg[2].y)p2.y = fg[2].y;
-			MemDC.Rectangle(CRect(p1, p2));
+			MyRect rc(p1.x, p1.y, p2.x, p2.y);
+			MemDC.Rectangle(rc);
 
 			p0 = fgss[n].p0;
 			double bj = fgss[n].bj;
@@ -665,7 +669,7 @@ void CSlopeSView::OnMouseMove(UINT nFlags, CPoint wpoint)
 			MemDC.MoveTo(p0);
 			MemDC.LineTo(fgss[n].ptEnd);
 			HDC hDC = MemDC.m_DC.GetSafeHdc();
-			ScalableArc(this,hDC, p0.x - (int)bj, p0.y - (int)bj, p0.x + (int)bj, p0.y + (int)bj, fgss[n].ptStart.x, fgss[n].ptStart.y, fgss[n].ptEnd.x, fgss[n].ptEnd.y);
+			ScalableArc(this,hDC, p0.x - bj, p0.y - bj, p0.x + bj, p0.y + bj, fgss[n].ptStart.x, fgss[n].ptStart.y, fgss[n].ptEnd.x, fgss[n].ptEnd.y);
 		}
 		else
 			if (fgss[minkid].qytks>0 && fgss[minkid].qytks <= tks)
@@ -785,15 +789,15 @@ void CSlopeSView::DoLButtonUp(MyPoint point)
 		{
 			if (sqrt((point.x - cntfg.p0.x)*(point.x - cntfg.p0.x) + (point.y - cntfg.p0.y)*(point.y - cntfg.p0.y)) < cntfg.bj)
 			{
-				tkid = (int)((point.x - cntfg.ptStart.x)*1.0 / (cntfg.ptEnd.x - cntfg.ptStart.x)* tks);
+				tkid = (double)((point.x - cntfg.ptStart.x)*1.0 / (cntfg.ptEnd.x - cntfg.ptStart.x)* tks);
 			}
 		}
 		else if (fg[1].x < point.x && fg[1].y < point.y &&point.x < fg[2].x && point.y < fg[2].y) {
 			MyPoint p1, p2, p0;
-			double x0 = point.x - fg[1].x; int i = (int)x0 / jd_fg;//第i列
-			double y0 = point.y - fg[1].y; int j = (int)y0 / jd_fg;//第j列
-			double dx = fg[2].x - fg[1].x; int k1 = (int)dx / jd_fg;//共k1+1列小方格
-			double dy = fg[2].y - fg[1].y; int k2 = (int)dy / jd_fg;//共k2+1行小方格
+			double x0 = point.x - fg[1].x; int i = (double)x0 / jd_fg;//第i列
+			double y0 = point.y - fg[1].y; int j = (double)y0 / jd_fg;//第j列
+			double dx = fg[2].x - fg[1].x; int k1 = (double)dx / jd_fg;//共k1+1列小方格
+			double dy = fg[2].y - fg[1].y; int k2 = (double)dy / jd_fg;//共k2+1行小方格
 			int n = j*(k1 + 1) + i;//第n个方格
 			if (fgss[n].k == 10000)break;
 			fgid = n;
@@ -1003,7 +1007,7 @@ bool  CSlopeSView::LineHitTest(MyPoint point)
 	}
 	for (int i = 0; i < m_crt_p - 1; i++){//遍历每条线段
 		double a1, b1, c1, d, a2, b2, c2, k1, k2, ju1, ju2;
-		int x1, x2, y1, y2;
+		double x1, x2, y1, y2;
 		a1 = b1 = c1 = d = a2 = b2 = c2 = k1 = k2 = ju1 = ju2 = 0.0; x1 = x2 = y1 = y2 = 0;
 		MyPoint p1, p2, m1, m2;
 		p1 = m_nzValues[i]; p2 = m_nzValues[i + 1];
@@ -1106,7 +1110,7 @@ int  CSlopeSView::MLHitTest(MyPoint point)
 		{
 			MyPoint p1 = m_fjxpoint[i][j], p2 = m_fjxpoint[i][j + 1];
 			double a1, b1, c1, d, k1, ju1;
-			int x1, x2, y1, y2;
+			double x1, x2, y1, y2;
 			a1 = b1 = c1 = d = k1 = ju1 = 0.0; x1 = x2 = y1 = y2 = 0;
 			CRect rc;
 			x1 = min(p1.x, p2.x); x2 = max(p1.x, p2.x); y1 = min(p1.y, p2.y); y2 = max(p1.y, p2.y);
@@ -1178,7 +1182,7 @@ void CSlopeSView::SearchToptcid(int tcid)
 			p1 = m_fjxpoint[i][j]; p2 = m_fjxpoint[i][j + 1];
 			double xlv = (p2.y - p1.y)*1.0 / (p2.x - p1.x);
 			double ju = p1.y - xlv*p1.x;
-			int y = (int)(p.x*xlv + ju);
+			double y = (double)(p.x*xlv + ju);
 			if (p1.x <= p.x && p.x <= p2.x){
 				if (y<p.y){
 					return;
@@ -1198,9 +1202,9 @@ void CSlopeSView::SetSXtuceng(CDC* pDC){
 		p1 = m_fjxpoint[tid][0]; p2 = m_fjxpoint[tid][1];
 		double xlv = (p2.y - p1.y)*1.0 / (p2.x - p1.x);
 		double ju = p1.y - xlv*p1.x;
-		p3.x = (int)((p1.x + p2.x)*0.5 + 0.5); p4.x = (int)((p1.x + p2.x)*0.5 + 0.5);
-		p3.y = (int)(xlv*p3.x + ju + 0.5) + 3;//线中点下点
-		p4.y = (int)(xlv*p4.x + ju + 0.5) - 3;//线中点上点
+		p3.x = (double)((p1.x + p2.x)*0.5 + 0.5); p4.x = (double)((p1.x + p2.x)*0.5 + 0.5);
+		p3.y = (double)(xlv*p3.x + ju + 0.5) + 3;//线中点下点
+		p4.y = (double)(xlv*p4.x + ju + 0.5) - 3;//线中点上点
 		buttomtc[tid] = checkcolor(p3, 1, pDC);//材料线的下方土为p3点所在土层
 		toptc[tid] = checkcolor(p4, -1, pDC);//材料线的上方土为p4点所在土层
 	}
@@ -1232,19 +1236,19 @@ int CSlopeSView::GetBoundPoint(double x, double y){
 	for (int i = 0; i < m_crt_p - 1; i++){
 		MyPoint p1, p2;//边界线的左右点
 		p1 = m_nzValues[i]; p2 = m_nzValues[i + 1];
-		if ((int)x<min(p1.x, p2.x) || (int)x>max(p1.x, p2.x))continue;
+		if ((double)x<min(p1.x, p2.x) || (double)x>max(p1.x, p2.x))continue;
 		if (p1.x == p2.x){
-			if ((int)x == p1.x){
+			if ((double)x == p1.x){
 				if (y>max(p1.y, p2.y))return max(p1.y, p2.y);
 				else if (y >= min(p1.y, p2.y) && y <= max(p1.y, p2.y))return (int)y;
 			}
 		}
 		else{
-			int yl = (int)(p1.y + (p2.y - p1.y)*(x - p1.x)*1.0 / (p2.x - p1.x));
-			if ((int)yl <= (int)y)return yl;
+			double yl = (double)(p1.y + (p2.y - p1.y)*(x - p1.x)*1.0 / (p2.x - p1.x));
+			if ((double)yl <= (double)y)return yl;
 		}
 	}
-	return (int)y;
+	return (double)y;
 }
 
 //按升序排序函数(坐标轴是向右下方)
@@ -1278,7 +1282,7 @@ int CSlopeSView::checkcolor(MyPoint p, int sx, CDC* pDC){
 }
 
 //面积计算
-double CalAre(double k1, double b1, double k2, double b2, int x1, int x2){
+double CalAre(double k1, double b1, double k2, double b2, double x1, double x2){
 	return fabs((k1 - k2)*(x2*x2 - x1*x1)*0.5 + (b1 - b2)*(x2 - x1));
 }
 
@@ -1329,8 +1333,8 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 		if ((i == bianjie[0] && bianjie[0] != -1) || (i == bianjie[1] && bianjie[1] != -1) || (i == bianjie[2] && bianjie[2] != -1))
 			continue;
 		double  xlv, ju;//斜率，截距
-		int x1, x2, y1, y2;//(x1,y1),(x2,y2)为两组解
-		int xl, xr, yu, yd;//左，右，下，上
+		double x1, x2, y1, y2;//(x1,y1),(x2,y2)为两组解
+		double xl, xr, yu, yd;//左，右，下，上
 		double a, b, c, dta;//二项式a，b，c，dta
 		xlv = ju = a = b = c = dta = 0; x1 = x2 = y1 = y2 = xl = xr = yu = yd = 0;
 		MyPoint p1, p2;//边界线的左右点
@@ -1343,23 +1347,23 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 			dta = b*b - 4 * a*c;
 			if (dta <= 0)continue;
 			else{
-				x1 = (int)((-b + sqrt(dta)) / 2 / a); x2 = (int)((-b - sqrt(dta)) / 2 / a);
+				x1 = (double)((-b + sqrt(dta)) / 2 / a); x2 = (double)((-b - sqrt(dta)) / 2 / a);
 				if (x1 >= xl&&x1 < xr){
 					cntfg.p[cntfg.cnt].p.x = x1;
-					cntfg.p[cntfg.cnt].p.y = (int)(xlv*x1 + ju);
+					cntfg.p[cntfg.cnt].p.y = (double)(xlv*x1 + ju);
 					cntfg.cnt++;
 				}
 				if (x2 >= xl&&x2 < xr){
 					cntfg.p[cntfg.cnt].p.x = x2;
-					cntfg.p[cntfg.cnt].p.y = (int)(xlv*x2 + ju);
+					cntfg.p[cntfg.cnt].p.y = (double)(xlv*x2 + ju);
 					cntfg.cnt++;
 				}
 			}
 		}
 		else{//斜率不存在
 			yu = min(p1.y, p2.y); yd = max(p1.y, p2.y);
-			y1 = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
-			y2 = (int)(p0.y - sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
+			y1 = (double)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
+			y2 = (double)(p0.y - sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));
 			if (y1 >= yu&&y1 < yd){
 				cntfg.p[cntfg.cnt].p.x = p1.x;
 				cntfg.p[cntfg.cnt].p.y = y1;
@@ -1407,12 +1411,12 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 		int tkpid, sbjpid;
 
 		MyPoint p1, p2, p3, p4; //条块的下左，下右，上左，上右点
-		p1.x = (int)(pp1.x + b*i);//下左
+		p1.x = (pp1.x + b*i);//下左
 		if (i == 0)p1.y = pp1.y;
-		else p1.y = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));//取下方的点
-		p2.x = (int)(pp1.x + b*(i + 1));//下右
+		else p1.y = (p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));//取下方的点
+		p2.x = (pp1.x + b*(i + 1));//下右
 		if (i == tks - 1)p2.y = pp2.y;
-		else p2.y = (int)(p0.y + sqrt(bj*bj - (p2.x - p0.x)*(p2.x - p0.x)));
+		else p2.y = (p0.y + sqrt(bj*bj - (p2.x - p0.x)*(p2.x - p0.x)));
 		p3.x = p1.x;//上左
 		p3.y = GetBoundPoint(p1.x, p1.y);
 		p4.x = p2.x;//上右
@@ -1453,7 +1457,7 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 
 		struct mianji
 		{
-			int yl;//材料线左端点
+			double yl;//材料线左端点
 			double s;//这个面积是材料线与条块下边缘围成的面积
 			int id;//材料线id
 			bool   operator <  (const  mianji&   rhs)  const   //升序排序时必须写的函数
@@ -1484,9 +1488,9 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 				}
 			}
 			//int id1 = -1, id2 = -1;
-			int yy1, yy2;//p1.x与p2.x在材料线上相应的y值
+			double yy1, yy2;//p1.x与p2.x在材料线上相应的y值
 
-			int beforey = p1.y;//底线前点
+			double beforey = p1.y;//底线前点
 
 			//3.用这条材料线与底边缘线相交，得到面积
 			for (int k = 0; k < m_pcrt[j] - 1; k++){
@@ -1498,18 +1502,18 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 				double ju = pn.y - xlv*pn.x;
 				if (ps.x <= p1.x && p1.x < pn.x){//需替换前点
 					ps.x = p1.x;
-					ps.y = (int)(xlv*p1.x + ju + 0.5);
+					ps.y = (xlv*p1.x + ju + 0.5);
 					yy1 = ps.y;
 					if (ps.y < p1.y)zuos = true;
 					else zuos = false;
 				}
 				if (ps.x <= p2.x && p2.x < pn.x){//需替换后点
 					pn.x = p2.x;
-					pn.y = (int)(xlv*p2.x + ju + 0.5);
+					pn.y = (xlv*p2.x + ju + 0.5);
 					yy2 = pn.y;
 				}
 
-				int y0 = (int)(xlv0*pn.x + ju0 + 0.5);//底线后点
+				double y0 = (double)(xlv0*pn.x + ju0 + 0.5);//底线后点
 				if (zuos && pn.y < y0)
 				{//两个点都在上方
 					xjs += CalAre(xlv, ju, xlv0, ju0, ps.x, pn.x);
@@ -1517,7 +1521,7 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 				}
 				else if (zuos &&pn.y >= y0)
 				{//左上右下
-					int x = (int)((ju - ju0) / (xlv0 - xlv) + 0.5); int y = (int)(xlv*x + ju + 0.5);
+					double x = ((ju - ju0) / (xlv0 - xlv) + 0.5); double y = (xlv*x + ju + 0.5);
 					xjs += CalAre(xlv, ju, xlv0, ju0, ps.x, x);
 					line[toptc[j]] += sqrt((pn.x - x)*(pn.x - x) + (y0 - y)*(y0 - y));
 					line[buttomtc[j]] += sqrt((ps.x - x)*(ps.x - x) + (beforey - y)*(beforey - y));
@@ -1526,7 +1530,7 @@ void CSlopeSView::FindAllCrossPoint(int n, MyPoint p0, double bj){
 				}
 				else if (!zuos&& pn.y < y0)
 				{//左下右上
-					int x = (int)((ju - ju0) / (xlv0 - xlv) + 0.5); int y = (int)(xlv*x + ju + 0.5);
+					double x = (double)((ju - ju0) / (xlv0 - xlv) + 0.5); double y = (double)(xlv*x + ju + 0.5);
 					xjs += CalAre(xlv, ju, xlv0, ju0, x, pn.x);
 					line[buttomtc[j]] += sqrt((pn.x - x)*(pn.x - x) + (y0 - y)*(y0 - y));
 					line[toptc[j]] += sqrt((ps.x - x)*(ps.x - x) + (beforey - y)*(beforey - y));
@@ -2024,7 +2028,7 @@ void CSlopeSView::OnParameter()
 		}
 	}
 }
-
+ 
 //设定精度
 void CSlopeSView::OnSearch()
 {
@@ -2035,12 +2039,12 @@ void CSlopeSView::OnSearch()
 	dlg.tiaokuaishu = tks;
 	dlg.check1 = check1;
 	if (IDOK == dlg.DoModal()){
-		if (dlg.bianchang>1 && dlg.bianchang <= 20)
+		if (dlg.bianchang>0.01 && dlg.bianchang <= 20)
 			jd_fg = dlg.bianchang;
-		else jd_fg = 1;
-		if (dlg.banjing>1 && dlg.banjing <= 20)
+		else jd_fg = 0.01;
+		if (dlg.banjing>0.01 && dlg.banjing <= 20)
 			jd_yh = dlg.banjing;
-		else jd_yh = 1;
+		else jd_yh = 0.01;
 		if (dlg.tiaokuaishu>1 && dlg.tiaokuaishu <= 20)
 			tks = dlg.tiaokuaishu;
 		else tks = 10;
@@ -2103,7 +2107,7 @@ void CSlopeSView::OnComt()
 	SetSXtuceng(pDC);
 	buttomtc[0];//材料线的下方土为p3点所在土层
 	toptc[0];
-	int maxy = 0, maxx = 0, minx = 10000;
+	double maxy = 0, maxx = 0, minx = 10000;
 	memset(bianjie, -1, sizeof(bianjie));
 	for (int i = 0; i < m_crt_p - 1; i++){
 		if (m_nzValues[i].y + m_nzValues[i + 1].y>maxy){
@@ -2126,16 +2130,17 @@ void CSlopeSView::OnComt()
 	HRGN rg = MyCreatePolygonRgn(m_nzValues, m_crt_p, WINDING);
 	MyPoint p0;//p0为圆心
 	double ban = (double)(jd_fg) / 2.0;
-	double dx = fg[2].x - fg[1].x; int k1 = (int)dx / jd_fg;//共k1+1列小方格
-	double dy = fg[2].y - fg[1].y; int k2 = (int)dy / jd_fg;//共k2+1行小方格
+	double dx = fg[2].x - fg[1].x; int k1 = (double)dx / jd_fg;//共k1+1列小方格
+	double dy = fg[2].y - fg[1].y; int k2 = (double)dy / jd_fg;//共k2+1行小方格
 	double min_k = 10000;//所有方格的minK
 	int txt_num=1;
 //	clock_t start,finish; 
 //	start=clock(); 
 	for (int i = 0; i <= k1; i++)//搜索到第i列小方格(0~k1+1)
 	{   // ((i*k1+j)*k2+(k-1))*k3+l  文件编号
-		p0.x = (int)(fg[1].x + i*jd_fg + ban);
-		if (i == k1)p0.x = (int)((fg[2].x - fg[1].x - i*jd_fg) / 2.0 + fg[1].x + i*jd_fg);
+		p0.x = (fg[1].x + i*jd_fg + ban);
+		if (i == k1)
+			p0.x = ((fg[2].x - fg[1].x - i*jd_fg) / 2.0 + fg[1].x + i*jd_fg);
 		for (int j = 0; j <= k2; j++)//搜索到第j行小方格(0~k2+1)
 		{
 			int n = j*(k1 + 1) + i;//搜索到第n个小方格
@@ -2144,12 +2149,13 @@ void CSlopeSView::OnComt()
 			struct stfgss  &cntfg1 = fgss[n];
 			struct stfgss  &cntfg2 = fgss[n];
 			cntfg.k = 10000;//这一方格的minK
-			p0.y = (int)(fg[1].y + j*jd_fg + ban);
-			if (j == k2)p0.y = (int)((fg[2].y - fg[1].y - j*jd_fg) / 2.0 + fg[1].y + j*jd_fg);
+			p0.y = (fg[1].y + j*jd_fg + ban);
+			if (j == k2)
+				p0.y = ((fg[2].y - fg[1].y - j*jd_fg) / 2.0 + fg[1].y + j*jd_fg);
 			//这就已经找到了圆心p0,接下来找半径。
 			//最大半径应该是圆心到底边的距离
 			maxbj = fabs(dbk*p0.x - p0.y + dbb) / sqrt(1 + dbk*dbk);
-			int k3 = (int)maxbj / jd_yh, bj;
+			int k3 = (double)maxbj / jd_yh, bj;
 
 			for (int k = 1; k <= k3; k++)
 			{
@@ -2170,8 +2176,8 @@ void CSlopeSView::OnComt()
 				for (int l = 0; l < cntfg.cnt - 1; l++)//3.判断相邻交点在圆上的中点是否在边界线以内
 				{
 					double ang = (cntfg.p[l].ang + cntfg.p[l+1].ang) / 2.0;
-					int x = (int)(cos(ang)*bj + 0.5), y = (int)(sin(ang)*bj + 0.5);
-					int z = x; x = -y; y = -z;//之前转换了坐标，这里转回来
+					double x = (double)(cos(ang)*bj + 0.5), y = (double)(sin(ang)*bj + 0.5);
+					double z = x; x = -y; y = -z;//之前转换了坐标，这里转回来
 					x += p0.x; y += p0.y;
 					if (PtInRegion(rg, x, y))
 					{//接下来对每段圆弧进行条分(一个半径下可能产生多段圆弧)
@@ -2415,17 +2421,17 @@ struct stfgss  &cntfg = fgss[n];
 		int tkpid, sbjpid;
 
 		MyPoint p1, p2, p3, p4; //条块的下左，下右，上左，上右点
-		p1.x = (int)(pp1.x + b*i);//下左
+		p1.x = (pp1.x + b*i);//下左
 		if (i == 0)
 			p1.y = pp1.y;
 		else
-			p1.y = (int)(p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));//取下方的点
+			p1.y = (p0.y + sqrt(bj*bj - (p1.x - p0.x)*(p1.x - p0.x)));//取下方的点
 
-		p2.x = (int)(pp1.x + b*(i + 1));//下右
+		p2.x = (pp1.x + b*(i + 1));//下右
 		if (i == tks - 1)
 			p2.y = pp2.y;
 		else
-			p2.y = (int)(p0.y + sqrt(bj*bj - (p2.x - p0.x)*(p2.x - p0.x)));
+			p2.y = (p0.y + sqrt(bj*bj - (p2.x - p0.x)*(p2.x - p0.x)));
 		p3.x = p1.x;//上左
 		p3.y = GetBoundPoint(p1.x, p1.y);
 		p4.x = p2.x;//上右
@@ -2548,7 +2554,7 @@ struct stfgss  &cntfg = fgss[n];
 		ju0 = p1.y - xlv0*p1.x;
 		struct mianji
 		{
-			int yl;//材料线左端点
+			double yl;//材料线左端点
 			double s;//这个面积是材料线与条块下边缘围成的面积
 			int id;//材料线id
 
@@ -2605,7 +2611,7 @@ struct stfgss  &cntfg = fgss[n];
 				if (ps.x <= p1.x && p1.x < pn.x) 
 				{//需替换前点
 					ps.x = p1.x;
-					ps.y = (int)(xlv*p1.x + ju + 0.5);
+					ps.y = (xlv*p1.x + ju + 0.5);
 					yy1 = ps.y;
 					if (ps.y < p1.y)
 						zuos = true;
@@ -2616,11 +2622,11 @@ struct stfgss  &cntfg = fgss[n];
 				{
 					//需替换后点
 					pn.x = p2.x;
-					pn.y = (int)(xlv*p2.x + ju + 0.5);
+					pn.y = (xlv*p2.x + ju + 0.5);
 					yy2 = pn.y;
 				}
 
-				int y0 = (int)(xlv0*pn.x + ju0 + 0.5);//底线后点
+				int y0 = (xlv0*pn.x + ju0 + 0.5);//底线后点
 				if (zuos && pn.y < y0)
 				{
 					//两个点都在上方
@@ -2630,7 +2636,9 @@ struct stfgss  &cntfg = fgss[n];
 				else if (zuos &&pn.y >= y0)
 				{
 					//左上右下
-					int x = (int)((ju - ju0) / (xlv0 - xlv) + 0.5); int y = (int)(xlv*x + ju + 0.5);
+					//todo: double check
+					double x = ((ju - ju0) / (xlv0 - xlv) + 0.5); 
+					double y = (xlv*x + ju + 0.5);
 					xjs += CalAre(xlv, ju, xlv0, ju0, ps.x, x);
 					line[toptc[j]] += sqrt((pn.x - x)*(pn.x - x) + (y0 - y)*(y0 - y));
 					line[buttomtc[j]] += sqrt((ps.x - x)*(ps.x - x) + (beforey - y)*(beforey - y));
@@ -2640,7 +2648,8 @@ struct stfgss  &cntfg = fgss[n];
 				else if (!zuos&& pn.y < y0)
 				{
 					//左下右上
-					int x = (int)((ju - ju0) / (xlv0 - xlv) + 0.5); int y = (int)(xlv*x + ju + 0.5);
+					//todo: double check
+					double x = (double)((ju - ju0) / (xlv0 - xlv) + 0.5); double y = (double)(xlv*x + ju + 0.5);
 					xjs += CalAre(xlv, ju, xlv0, ju0, x, pn.x);
 					line[buttomtc[j]] += sqrt((pn.x - x)*(pn.x - x) + (y0 - y)*(y0 - y));
 					line[toptc[j]] += sqrt((ps.x - x)*(ps.x - x) + (beforey - y)*(beforey - y));
@@ -3297,451 +3306,7 @@ for ( mm=0;mm<3;mm++)
 	//		     fout<<"      "<<double(cntfg2-cntfg1)<<endl;
 		}
 
-/*
-lastData.assign(allBlockData.begin(), allBlockData.end());//保存上次的数据到lastData
-  //  第二次迭代计算
-			for (int i = tks-1; i >=0; i--)  //
-			{
-				//定义
-				BlockData blockData = allBlockData[i];			//每个块的数据
-				double AMat[3][3];								//A3*3总矩阵
-				double deltaX(0), deltaY(0), deltaTheta(0);		//形心的位移增量
-				double FxSum(0), FySum(0), MSum(0);	//计算中的x,y合分量,全力矩
-				//0.0. 计算块面积,形心
-				MyPoint centroid;			//形心
-				double area(0);			//块面积
-					for (int m = 0; m < number[i] - 1; ++m)
-				{
-					area += pp[i][m].x * pp[i][m + 1].y - pp[i][m + 1].x * pp[i][m].y;
-					centroid.x += (pp[i][m].x + pp[i][m + 1].x) * (pp[i][m].x * pp[i][m + 1].y - pp[i][m + 1].x*pp[i][m].y);
-					centroid.y += (pp[i][m].y + pp[i][m + 1].y) * (pp[i][m].x * pp[i][m + 1].y - pp[i][m + 1].x*pp[i][m].y);
-				}
-				//最后一个点为(x0,y0)
-				area += pp[i][number[i] - 1].x * pp[i][0].y - pp[i][0].x * pp[i][number[i] - 1].y;
-				centroid.x += (pp[i][number[i] - 1].x + pp[i][0].x) * (pp[i][number[i] - 1].x * pp[i][0].y - pp[i][0].x*pp[i][number[i] - 1].y);
-				centroid.y += (pp[i][number[i] - 1].y + pp[i][0].y) * (pp[i][number[i] - 1].x * pp[i][0].y - pp[i][0].x*pp[i][number[i] - 1].y);
-				//求形心
-				area /= 2;
-				centroid.x /= 6 * area;
-				centroid.y /= 6 * area;
-				//0.1 计算AMat, 3*3矩阵
-				AMat[0][0] = 0; AMat[0][1] = 0; AMat[0][2] = 0;
-				AMat[1][0] = 0; AMat[1][1] = 0; AMat[1][2] = 0;
-				AMat[2][0] = 0; AMat[2][1] = 0; AMat[2][2] = 0;
-				double aMat[3][3];			//每个节点的A3*3总矩阵
-				aMat[0][0] = 0; aMat[0][1] = 0; aMat[0][2] = 0;
-				aMat[1][0] = 0; aMat[1][1] = 0; aMat[1][2] = 0;
-				aMat[2][0] = 0; aMat[2][1] = 0; aMat[2][2] = 0;
 
-				double sinA, cosA;
-				if  (number[i]==3 && i==0)  //左三角形
-				{    
-					for (int m = 0; m < number[i]; ++m)
-				     {
-				         if (m==0)
-				         calAngle(pp[i][0], pp[i][2], &sinA, &cosA);
-						 else
-                          {  
-						 sinA=1; cosA=0;
-						   }
-					aMat[0][0] = -ks * cosA * cosA - kn * sinA * sinA;
-					aMat[0][1] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[0][2] = ks * (cosA * cosA * (pp[i][m].y - centroid.y) - sinA * cosA * (pp[i][m].x - centroid.x)) +
-						kn * (cosA * sinA * (pp[i][m].x - centroid.x) + sinA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[1][0] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[1][1] = -ks * sinA * sinA - kn * cosA * cosA;
-					aMat[1][2] = ks * (cosA * sinA * (pp[i][m].y - centroid.y) - sinA * sinA * (pp[i][m].x - centroid.x)) -
-						kn * (cosA * cosA * (pp[i][m].x - centroid.x) + cosA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[2][0] = aMat[1][0] * (pp[i][m].x - centroid.x) - aMat[0][0] * (pp[i][m].y - centroid.y);
-					aMat[2][1] = aMat[1][1] * (pp[i][m].x - centroid.x) - aMat[0][1] * (pp[i][m].y - centroid.y);
-					aMat[2][2] = aMat[1][2] * (pp[i][m].x - centroid.x) - aMat[0][2] * (pp[i][m].y - centroid.y);
-
-					//求和
-					AMat[0][0] += aMat[0][0]; AMat[0][1] += aMat[0][1]; AMat[0][2] += aMat[0][2];
-					AMat[1][0] += aMat[1][0]; AMat[1][1] += aMat[1][1]; AMat[1][2] += aMat[1][2];
-					AMat[2][0] += aMat[2][0]; AMat[2][1] += aMat[2][1]; AMat[2][2] += aMat[2][2];
-
-					if (m==number[i]-1) //左弹簧4号弹簧，再算一遍
-				{	
-					calAngle(pp[i][0], pp[i][2], &sinA, &cosA);
-
-					aMat[0][0] = -ks * cosA * cosA - kn * sinA * sinA;
-					aMat[0][1] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[0][2] = ks * (cosA * cosA * (pp[i][m].y - centroid.y) - sinA * cosA * (pp[i][m].x - centroid.x)) +
-						kn * (cosA * sinA * (pp[i][m].x - centroid.x) + sinA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[1][0] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[1][1] = -ks * sinA * sinA - kn * cosA * cosA;
-					aMat[1][2] = ks * (cosA * sinA * (pp[i][m].y - centroid.y) - sinA * sinA * (pp[i][m].x - centroid.x)) -
-						kn * (cosA * cosA * (pp[i][m].x - centroid.x) + cosA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[2][0] = aMat[1][0] * (pp[i][m].x - centroid.x) - aMat[0][0] * (pp[i][m].y - centroid.y);
-					aMat[2][1] = aMat[1][1] * (pp[i][m].x - centroid.x) - aMat[0][1] * (pp[i][m].y - centroid.y);
-					aMat[2][2] = aMat[1][2] * (pp[i][m].x - centroid.x) - aMat[0][2] * (pp[i][m].y - centroid.y);
-
-					//求和
-					AMat[0][0] += aMat[0][0]; AMat[0][1] += aMat[0][1]; AMat[0][2] += aMat[0][2];
-					AMat[1][0] += aMat[1][0]; AMat[1][1] += aMat[1][1]; AMat[1][2] += aMat[1][2];
-					AMat[2][0] += aMat[2][0]; AMat[2][1] += aMat[2][1]; AMat[2][2] += aMat[2][2];
-					}
-
-				      }
-				  }
-				else if (number[i]==3 && i==tks-1) //右边界三角形
-				{  
-					for (int m = 0; m < number[i]; ++m)
-				     {
-				       if (m==1)
-				         calAngle(pp[i][2], pp[i][1], &sinA, &cosA);
-					   else
-					   { sinA=1; cosA=0;}
-
-					aMat[0][0] = -ks * cosA * cosA - kn * sinA * sinA;
-					aMat[0][1] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[0][2] = ks * (cosA * cosA * (pp[i][m].y - centroid.y) - sinA * cosA * (pp[i][m].x - centroid.x)) +
-						kn * (cosA * sinA * (pp[i][m].x - centroid.x) + sinA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[1][0] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[1][1] = -ks * sinA * sinA - kn * cosA * cosA;
-					aMat[1][2] = ks * (cosA * sinA * (pp[i][m].y - centroid.y) - sinA * sinA * (pp[i][m].x - centroid.x)) -
-						kn * (cosA * cosA * (pp[i][m].x - centroid.x) + cosA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[2][0] = aMat[1][0] * (pp[i][m].x - centroid.x) - aMat[0][0] * (pp[i][m].y - centroid.y);
-					aMat[2][1] = aMat[1][1] * (pp[i][m].x - centroid.x) - aMat[0][1] * (pp[i][m].y - centroid.y);
-					aMat[2][2] = aMat[1][2] * (pp[i][m].x - centroid.x) - aMat[0][2] * (pp[i][m].y - centroid.y);
-
-					//求和
-					AMat[0][0] += aMat[0][0]; AMat[0][1] += aMat[0][1]; AMat[0][2] += aMat[0][2];
-					AMat[1][0] += aMat[1][0]; AMat[1][1] += aMat[1][1]; AMat[1][2] += aMat[1][2];
-					AMat[2][0] += aMat[2][0]; AMat[2][1] += aMat[2][1]; AMat[2][2] += aMat[2][2];
-
-					 if (m==2) //左边界三角形4号弹簧 再算一次
-				   {    
-					calAngle(pp[i][2], pp[i][1], &sinA, &cosA);
-
-					aMat[0][0] = -ks * cosA * cosA - kn * sinA * sinA;
-					aMat[0][1] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[0][2] = ks * (cosA * cosA * (pp[i][m].y - centroid.y) - sinA * cosA * (pp[i][m].x - centroid.x)) +
-						kn * (cosA * sinA * (pp[i][m].x - centroid.x) + sinA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[1][0] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[1][1] = -ks * sinA * sinA - kn * cosA * cosA;
-					aMat[1][2] = ks * (cosA * sinA * (pp[i][m].y - centroid.y) - sinA * sinA * (pp[i][m].x - centroid.x)) -
-						kn * (cosA * cosA * (pp[i][m].x - centroid.x) + cosA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[2][0] = aMat[1][0] * (pp[i][m].x - centroid.x) - aMat[0][0] * (pp[i][m].y - centroid.y);
-					aMat[2][1] = aMat[1][1] * (pp[i][m].x - centroid.x) - aMat[0][1] * (pp[i][m].y - centroid.y);
-					aMat[2][2] = aMat[1][2] * (pp[i][m].x - centroid.x) - aMat[0][2] * (pp[i][m].y - centroid.y);
-
-					//求和
-					AMat[0][0] += aMat[0][0]; AMat[0][1] += aMat[0][1]; AMat[0][2] += aMat[0][2];
-					AMat[1][0] += aMat[1][0]; AMat[1][1] += aMat[1][1]; AMat[1][2] += aMat[1][2];
-					AMat[2][0] += aMat[2][0]; AMat[2][1] += aMat[2][1]; AMat[2][2] += aMat[2][2];
-					 }
-				      }
-		
-				}
-				else //四边形
-				{		
-					for (int m = 0; m < number[i]; ++m)
-				     {
-				      sinA=1; cosA=0;
-                     aMat[0][0] = -ks * cosA * cosA - kn * sinA * sinA;
-					aMat[0][1] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[0][2] = ks * (cosA * cosA * (pp[i][m].y - centroid.y) - sinA * cosA * (pp[i][m].x - centroid.x)) +
-						kn * (cosA * sinA * (pp[i][m].x - centroid.x) + sinA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[1][0] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[1][1] = -ks * sinA * sinA - kn * cosA * cosA;
-					aMat[1][2] = ks * (cosA * sinA * (pp[i][m].y - centroid.y) - sinA * sinA * (pp[i][m].x - centroid.x)) -
-						kn * (cosA * cosA * (pp[i][m].x - centroid.x) + cosA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[2][0] = aMat[1][0] * (pp[i][m].x - centroid.x) - aMat[0][0] * (pp[i][m].y - centroid.y);
-					aMat[2][1] = aMat[1][1] * (pp[i][m].x - centroid.x) - aMat[0][1] * (pp[i][m].y - centroid.y);
-					aMat[2][2] = aMat[1][2] * (pp[i][m].x - centroid.x) - aMat[0][2] * (pp[i][m].y - centroid.y);
-
-					//求和
-					AMat[0][0] += aMat[0][0]; AMat[0][1] += aMat[0][1]; AMat[0][2] += aMat[0][2];
-					AMat[1][0] += aMat[1][0]; AMat[1][1] += aMat[1][1]; AMat[1][2] += aMat[1][2];
-					AMat[2][0] += aMat[2][0]; AMat[2][1] += aMat[2][1]; AMat[2][2] += aMat[2][2];
-
-					if (m==2 || m==3)
-                    {
-				    calAngle(pp[i][3], pp[i][2], &sinA, &cosA);
-					aMat[0][0] = -ks * cosA * cosA - kn * sinA * sinA;
-					aMat[0][1] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[0][2] = ks * (cosA * cosA * (pp[i][m].y - centroid.y) - sinA * cosA * (pp[i][m].x - centroid.x)) +
-						kn * (cosA * sinA * (pp[i][m].x - centroid.x) + sinA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[1][0] = -ks * cosA * sinA + kn * cosA * sinA;
-					aMat[1][1] = -ks * sinA * sinA - kn * cosA * cosA;
-					aMat[1][2] = ks * (cosA * sinA * (pp[i][m].y - centroid.y) - sinA * sinA * (pp[i][m].x - centroid.x)) -
-						kn * (cosA * cosA * (pp[i][m].x - centroid.x) + cosA * sinA * (pp[i][m].y - centroid.y));
-
-					aMat[2][0] = aMat[1][0] * (pp[i][m].x - centroid.x) - aMat[0][0] * (pp[i][m].y - centroid.y);
-					aMat[2][1] = aMat[1][1] * (pp[i][m].x - centroid.x) - aMat[0][1] * (pp[i][m].y - centroid.y);
-					aMat[2][2] = aMat[1][2] * (pp[i][m].x - centroid.x) - aMat[0][2] * (pp[i][m].y - centroid.y);
-
-					//求和
-					AMat[0][0] += aMat[0][0]; AMat[0][1] += aMat[0][1]; AMat[0][2] += aMat[0][2];
-					AMat[1][0] += aMat[1][0]; AMat[1][1] += aMat[1][1]; AMat[1][2] += aMat[1][2];
-					AMat[2][0] += aMat[2][0]; AMat[2][1] += aMat[2][1]; AMat[2][2] += aMat[2][2];
-					}
-				  }
-				}
-				    
-				//1.0.求FxSum, FySum, MSum
-				//对每个块的X,Y力和力矩求和 
-				MyPoint dis[4];				//每个节点到形心的距离
-
-				if (3 == number[i])
-				{ 
-		     	 if (i==0) //来自右侧的力
-                   {
-			          blockData.Fx[0]=0;
-					  blockData.Fx[1]=-allBlockData[i+1].Fx[0];
-                      blockData.Fx[2]=-allBlockData[i+1].Fx[3];
-			          blockData.Fy[0]=0;
-					  blockData.Fy[1]=-allBlockData[i+1].Fy[0];
-                      blockData.Fy[2]=-allBlockData[i+1].Fy[3];
-			     	}
-			     else if (i==tks-1) //来自左侧的力，已经更新的力
-				   {
-					  blockData.Fx[0]=-allBlockData[i-1].Fx[1];
-					  blockData.Fx[1]=0;
-                      blockData.Fx[2]=-allBlockData[i-1].Fx[2];
-			          blockData.Fy[0]=-allBlockData[i-1].Fy[1];
-					  blockData.Fy[1]=0;
-                      blockData.Fy[2]=-allBlockData[i-1].Fy[2];
-			     	}
-				    FxSum = blockData.Fx[0] + blockData.Fx[1] + blockData.Fx[2];
-					FySum = blockData.Fy[0] + blockData.Fy[1] + blockData.Fy[2]-W[i];
-					dis[0] = pp[i][0] - centroid;
-					dis[1] = pp[i][1] - centroid;
-					dis[2] = pp[i][2] - centroid;
-					MSum = blockData.Fy[0] * dis[0].x + blockData.Fy[1] * dis[1].x + blockData.Fy[2] * dis[2].x
-						-blockData.Fx[0] * dis[0].y + blockData.Fx[1] * dis[1].y + blockData.Fx[2] * dis[2].y;
-				}
-				else if (4 == number[i])
-				{
-					//需要考虑迭代的力
-				 if (i==0) //来自右侧的力
-                   {
-			          blockData.Fx[0]=0;
-					  blockData.Fx[1]=-allBlockData[i+1].Fx[0];
-                      blockData.Fx[2]=-allBlockData[i+1].Fx[3];
-					  blockData.Fx[3]=0;
-			          blockData.Fy[0]=0;
-					  blockData.Fy[1]=-allBlockData[i+1].Fy[0];
-                      blockData.Fy[2]=-allBlockData[i+1].Fy[3];
-					  blockData.Fy[3]=0;
-			     	}
-				else if (i==tks-1) //来自左侧的力，已经更新的力
-			    	{
-					  blockData.Fx[0]=-allBlockData[i-1].Fx[1];
-					  blockData.Fx[1]=0;
-                      blockData.Fx[2]=0;
-					  blockData.Fx[3]=-allBlockData[i-1].Fx[2];
-			          blockData.Fy[0]=-allBlockData[i-1].Fy[1];
-					  blockData.Fy[1]=0;
-                      blockData.Fy[2]=0;
-					  blockData.Fy[3]=-allBlockData[i-1].Fy[2];
-			    	}
-				   else
-			    	{
-				      blockData.Fx[0]=-allBlockData[i-1].Fx[1];
-					  blockData.Fx[1]=-allBlockData[i+1].Fx[0];
-                      blockData.Fx[2]=-allBlockData[i+1].Fx[3];
-					  blockData.Fx[3]=-allBlockData[i-1].Fx[2];
-			          blockData.Fy[0]=-allBlockData[i-1].Fy[1];
-					  blockData.Fy[1]=-allBlockData[i+1].Fy[0];
-                      blockData.Fy[2]=-allBlockData[i+1].Fy[3];
-					  blockData.Fy[3]=-allBlockData[i-1].Fy[2];	
-		        		}
-
-			    	FxSum = blockData.Fx[0] + blockData.Fx[1] + blockData.Fx[2]+ blockData.Fx[3];
-				    FySum = blockData.Fy[0] + blockData.Fy[1] + blockData.Fy[2]+ blockData.Fy[3] -W[i];
-					dis[0] = pp[i][0] - centroid;
-					dis[1] = pp[i][1] - centroid;
-					dis[2] = pp[i][2] - centroid;
-					dis[3] = pp[i][3] - centroid;
-				   MSum =blockData.Fy[0] * dis[0].x + blockData.Fy[1] * dis[1].x + blockData.Fy[2] * dis[2].x + blockData.Fy[3] * dis[3].x
-					 -blockData.Fx[0] * dis[0].y - blockData.Fx[1] * dis[1].y - blockData.Fx[2] * dis[2].y - blockData.Fx[3] * dis[3].y;		
-				}
-	
-
-	double temp = AMat[0][0] * AMat[1][1] * AMat[2][2] - AMat[0][0] * AMat[1][2] * AMat[2][1] - AMat[0][1] * AMat[1][0] * AMat[2][2] +
-					AMat[0][1] * AMat[1][2] * AMat[2][0] + AMat[0][2] * AMat[1][0] * AMat[2][1] - AMat[0][2] * AMat[1][1] * AMat[2][0];
-
-              double a[4],AMat_1[3][3];
-                     int ii,jj,mm,nn,kk;
-                for (ii=0;ii<3;ii++) 
-                    for (jj=0;jj<3;jj++) 
-	                       AMat_1[ii][jj]=0;
-
-for ( mm=0;mm<3;mm++)
-   for (nn=0;nn<3;nn++)    
-      {  
-		  kk=-1;    
-       for (ii=0;ii<3;ii++)   
-          {
-			  for (jj=0;jj<3;jj++)          
-              { 
-				  if   (ii !=mm && jj !=nn) 
-                     {
-				      kk=kk+1;           
-                     a[kk]=AMat[ii][jj];
-		   }
-		   }
-	   }
-       AMat_1[nn][mm]=(pow(-1,mm+nn)*(a[0]*a[3]-a[1]*a[2]))/temp;
-	   }
-	
-	deltaX = -(FxSum * AMat_1[0][0]+ FySum *AMat_1[0][1] +MSum *AMat_1[0][2]);
-
-	deltaY = -(FxSum * AMat_1[1][0]+ FySum *AMat_1[1][1]+MSum * AMat_1[1][2]);
-
-    deltaTheta = -(FxSum * AMat_1[2][0]+FySum * AMat_1[2][1]+MSum *AMat_1[2][2]);
-
-				//2.0. 求每个节点的位移
-				MyPoint nodeDeltaPos[4];		//每个节点的偏移deltaX, deltaY
-				for (int m = 0; m < number[i]; ++m)
-				{
-					nodeDeltaPos[m].x = -deltaX +(pp[i][m].y - centroid.y) * deltaTheta;
-					nodeDeltaPos[m].y = -deltaY - (pp[i][m].x - centroid.x) * deltaTheta;
-				}
-
-				//3.0. 求每个节点的受力
-				//3.1. 将每个节点的力分解到x,y分量
-			double cosX(0), sinX(0), sinY(0), cosY(0);		//弹簧与x,y轴的夹角的cos值
-				if (3 == number[i])
-				{
-			if (i==0)  //左边缘的时候
-					{
-                   //第1个节点，上左  
-					calAngle(pp[i][0], pp[i][number[i] - 1], &sinX, &cosX, &sinY, &cosY);	//计算cos(thetaX), cos(thetaY);
-					blockData.F1[0] = ks * nodeDeltaPos[0].x * cosX + ks * nodeDeltaPos[0].y * sinX;						//1号,切向,theta
-					blockData.F1[1] = kn * nodeDeltaPos[0].x * sinX + kn * nodeDeltaPos[0].y * -cosX;					//2号,法向,theta-pi/2
-					blockData.Fx[0] = blockData.F1[0] * cosX + blockData.F1[1] * sinX;		//X分量
-					blockData.Fy[0] = blockData.F1[0] * sinX + blockData.F1[1] * -cosX;		//Y分量
-
-					//第2个节点,上右
-					blockData.F2[0] = ks * nodeDeltaPos[1].x * 0 + ks * nodeDeltaPos[1].y * -1;				//1号,切向,-Y
-					blockData.F2[1] = kn * nodeDeltaPos[1].x * 1 + kn * nodeDeltaPos[1].y * 0;					//2号,法向,+X
-					blockData.Fx[1] = blockData.F2[1];					//X分量
-					blockData.Fy[1] = blockData.F2[0] * -1;			//Y分量
-       
-					//第3个节点, 下右
-                      		blockData.F3[0] = ks * nodeDeltaPos[2].x * 0 + ks * nodeDeltaPos[2].y * 1;					//1号,切向,+Y
-				         	blockData.F3[1] = kn * nodeDeltaPos[2].x * 1 + kn * nodeDeltaPos[2].y * 0;					//2号,法向,+X
-				        	calAngle(pp[i][number[i] - 1], pp[i][0], &sinX, &cosX, &sinY, &cosY);	//计算cos(thetaX), cos(thetaY);
-					        blockData.F3[2] = ks * nodeDeltaPos[2].x * cosX + ks * nodeDeltaPos[2].y * sinX;	//切向			//3号,切向,theta
-					        blockData.F3[3] = kn * nodeDeltaPos[2].x * -sinX + kn * nodeDeltaPos[2].y * cosX;				//4号,法向,theta+pi/2
-			               blockData.Fx[2] = blockData.F3[1] + blockData.F3[2] * cosX + blockData.F3[3] * -sinX;	//X分量
-					       blockData.Fy[2] = blockData.F3[0] + blockData.F3[2] * sinX + blockData.F3[3] * cosX;	//Y分量	
-						}
-					else
-					{
-                     //第1个节点，上左  		
-					blockData.F1[0] =  ks * nodeDeltaPos[0].y *-1;						//1号,切向,theta
-					blockData.F1[1] = kn * nodeDeltaPos[0].x * -1;					//2号,法向,theta-pi/2
-					blockData.Fx[0] =  blockData.F1[1] *-1;		//X分量
-					blockData.Fy[0] = blockData.F1[0] * -1;		//Y分量
-					//第2个节点,上右
-					calAngle(pp[i][1], pp[i][number[i] - 1], &sinX, &cosX, &sinY, &cosY);	//计算cos(thetaX), cos(thetaY);
-					blockData.F2[0] = ks * nodeDeltaPos[1].x * cosX+ ks * nodeDeltaPos[1].y * sinX;				//1号,切向,-Y
-					blockData.F2[1] = kn * nodeDeltaPos[1].x * -sinX + kn * nodeDeltaPos[1].y * cosX;					//2号,法向,+X
-					blockData.Fx[1] = blockData.F2[0]*cosX +blockData.F2[1]*-sinX;					//X分量
-					blockData.Fy[1] = blockData.F2[0] *sinX +blockData.F2[1]*cosX;			//Y分量
-				    //第3个节点,下左
-					blockData.F3[0] = ks * nodeDeltaPos[2].x * 0 + ks * nodeDeltaPos[2].y * 1;						//1号,切向,+Y
-					blockData.F3[1] = kn * nodeDeltaPos[2].x * -1 + kn * nodeDeltaPos[2].y * 0;					//2号,法向,-X
-					//calAngle(pp[i][number[i] - 1], pp[i][2], &sinX, &cosX, &sinY, &cosY);	//计算cos(thetaX), cos(thetaY);
-					calAngle(pp[i][number[i] - 1], pp[i][1], &sinX, &cosX, &sinY, &cosY);	
-					blockData.F3[2] = ks * nodeDeltaPos[2].x * cosX + ks * nodeDeltaPos[2].y * sinX;				//3号,切向, theta
-					blockData.F3[3] = kn * nodeDeltaPos[2].x *sinX + kn * nodeDeltaPos[2].y * -cosX;				//2号,法向, theta+pi/2
-		  		    blockData.Fx[2] = -blockData.F3[1] + blockData.F3[2] * cosX + blockData.F3[3] * sinX;	//X分量
-					blockData.Fy[2] = blockData.F3[0] + blockData.F3[2] * sinX + blockData.F3[3] * -cosX;	//Y分量
-					}
-					//第4个节点
-					blockData.Fx[3] = 0;	//X分量
-					blockData.Fy[3] = 0;	//Y分量
-				}
-				else if (4 == number[i])
-				{
-					//第1个节点,上左
-					blockData.F1[0] = ks * nodeDeltaPos[0].x * 0 + ks * nodeDeltaPos[0].y * -1;					//1号,切向,-Y
-					blockData.F1[1] = kn * nodeDeltaPos[0].x * -1 + kn * nodeDeltaPos[0].y * 0;					//2号,法向,-X
-					blockData.Fx[0] = blockData.F1[1] * -1;				//X分量
-					blockData.Fy[0] = blockData.F1[0] * -1;				//Y分量
-
-					//第2个节点,上右
-					blockData.F2[0] = ks * nodeDeltaPos[1].x * 0 + ks * nodeDeltaPos[1].y * -1;					//1号,切向,-Y
-					blockData.F2[1] = kn * nodeDeltaPos[1].x * 1 + kn * nodeDeltaPos[1].y * 0;						//2号,法向,+X
-					blockData.Fx[1] = blockData.F2[1];				//X分量
-					blockData.Fy[1] = blockData.F2[0] * -1;				//Y分量
-
-					//第3个节点,下右
-					blockData.F3[0] = ks * nodeDeltaPos[2].x * 0 + ks * nodeDeltaPos[2].y * 1;					//1号,切向,+Y
-					blockData.F3[1] = kn * nodeDeltaPos[2].x * 1 + kn * nodeDeltaPos[2].y * 0;					//2号,法向,+X
-			  
-				    calAngle(pp[i][2], pp[i][number[i] - 1], &sinX, &cosX, &sinY, &cosY);				//计算cos(thetaX), cos(thetaY);
-					blockData.F3[2] = ks * nodeDeltaPos[2].x * cosX + ks * nodeDeltaPos[2].y * sinX;				//3号,切向,theta
-					blockData.F3[3] = kn * nodeDeltaPos[2].x * -sinX + kn * nodeDeltaPos[2].y * cosX;				//4号,法向,theta+pi/2
-				
-					blockData.Fx[2] = blockData.F3[1] + blockData.F3[2] * cosX + blockData.F3[3] * -sinX;	//X分量
-					blockData.Fy[2] = blockData.F3[0] + blockData.F3[2] * sinX+ blockData.F3[3] * cosX;	//Y分量
-
-					//第4个节点,下左
-					blockData.F4[0] = ks * nodeDeltaPos[3].x * 0 + ks * nodeDeltaPos[3].y * 1;						//1号,切向,+Y
-					blockData.F4[1] = kn * nodeDeltaPos[3].x * -1 + kn * nodeDeltaPos[3].y * 0;					//2号,法向,-X
-					//calAngle(pp[i][number[i] - 1], pp[i][2], &sinX, &cosX, &sinY, &cosY);	//计算cos(thetaX), cos(thetaY);
-					calAngle(pp[i][number[i] - 1], pp[i][2], &sinX, &cosX, &sinY, &cosY);	
-					blockData.F4[2] = ks * nodeDeltaPos[3].x * cosX + ks * nodeDeltaPos[3].y * sinX;				//3号,切向, theta
-					blockData.F4[3] = kn * nodeDeltaPos[3].x * sinX + kn * nodeDeltaPos[3].y * -cosX;				//2号,法向, theta+pi/2
-		  		    blockData.Fx[3] = -blockData.F4[1] + blockData.F4[2] * cosX + blockData.F4[3] * sinX;	//X分量
-					blockData.Fy[3] = blockData.F4[0] + blockData.F4[2] * sinX + blockData.F4[3] * -cosX;	//Y分量
-			}
-
-			      blockData.NF_x=abs(blockData.Fx[0]+blockData.Fx[1]+blockData.Fx[2]+blockData.Fx[3]+FxSum);
-			      blockData.NF_y=abs(blockData.Fy[0]+blockData.Fy[1]+blockData.Fy[2]+blockData.Fy[3]+FySum);
-			//考察节点分配的力是否相等
-			if (abs(blockData.NF_x)>0.0001 || abs(blockData.NF_y)>0.0001)
-			   {
-			   blockData.NF_x=blockData.NF_x;
-			   }
-			//考察节点合外力是否相等 //从右往左计算
-			if (i==0 && number[i]==3) //最左侧的三角形
-			{
-			blockData.NF_x=blockData.Fx[0]+blockData.Fx[1]+blockData.Fx[2]-(allBlockData[1].Fx[0]+allBlockData[1].Fx[3]);
-			blockData.NF_y=blockData.Fy[0]+blockData.Fy[1]+blockData.Fy[2]-(allBlockData[1].Fy[0]+allBlockData[1].Fy[3]+W[0]);
-			}
-			else if  (i==tks-1 &&  number[i]==3) //最右侧三角形
-			{
-			blockData.NF_x=blockData.Fx[0]+blockData.Fx[1]+blockData.Fx[2]-(lastData[i-1].Fx[1]+lastData[i-1].Fx[2]);
-			blockData.NF_y=blockData.Fy[0]+blockData.Fy[1]+blockData.Fy[2]-(lastData[i-1].Fy[1]+lastData[i-1].Fy[2]+W[i]);
-			}
-			else
-            {
-			blockData.NF_x=blockData.Fx[0]+blockData.Fx[1]+blockData.Fx[2]+blockData.Fx[3]-(lastData[i-1].Fx[1]+lastData[i-1].Fx[2]+allBlockData[i+1].Fx[0]+allBlockData[i+1].Fx[3]);
-			blockData.NF_y=blockData.Fy[0]+blockData.Fy[1]+blockData.Fy[2]+blockData.Fy[3]-(lastData[i-1].Fy[1]+lastData[i-1].Fy[2]+allBlockData[i+1].Fy[0]+allBlockData[i+1].Fy[3]+W[i]);
-			}
-
-			 if (abs(blockData.NF_x)>0.0001 || abs(blockData.NF_y)>0.0001)
-			   {
-			   blockData.NF_x=blockData.NF_x;
-			   }
-
-				//4.0 计算下一块的Fx,Fy
-			  //保存数据 保存当前块的位移角度等数据
-			blockData.deltaX = deltaX;
-			blockData.deltaY = deltaY;
-			blockData.deltaTheta = deltaTheta;
-			allBlockData[i] = blockData; 
-			}
-			*/
 		  //第二次迭代计算完毕
 			//迭代终止条件
 			//1.按位移
