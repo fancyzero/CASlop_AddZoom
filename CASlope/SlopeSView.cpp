@@ -72,6 +72,8 @@ BEGIN_MESSAGE_MAP(CSlopeSView, CView)
 
 	//ON_COMMAND(ID_lianxi, &CSlopeSView::Onlianxi)
 	ON_COMMAND(ID_Show, &CSlopeSView::OnShow)
+	ON_WM_MBUTTONDOWN()
+	ON_WM_MBUTTONUP()
 END_MESSAGE_MAP()
 
 // CSlopeSView 构造/析构
@@ -84,6 +86,7 @@ CSlopeSView::CSlopeSView()
 	m_translateY =  610;
 	m_off_x = 0;
 	m_off_y = 0;
+	draging = false;
 	FirstFocus = true;
 	m_nDrawType = 0;
 	m_nLineStyle = PS_SOLID;
@@ -120,7 +123,7 @@ CSlopeSView::CSlopeSView()
 	tuceng[0].gama = 20; tuceng[1].gama = 20;
 	tuceng[0].c = 10; tuceng[1].c = 20;
 	tuceng[0].phi = 12.0; tuceng[1].phi = 18.0;
-	jd_fg = 10/20.0; jd_yh = 5/20.0; tks = 10; minkid = 0;
+	jd_fg = 10; jd_yh = 5; tks = 10; minkid = 0;
 	toptcid = 0;
 	mode = 1;
 	ks=100000;
@@ -521,6 +524,13 @@ void CSlopeSView::OnDraw(CDC* pDC)//重画机制（双缓冲）
 void CSlopeSView::OnMouseMove(UINT nFlags, CPoint wpoint)
 {
 	// TODO:  在此添加消息处理程序代码和/或调用默认值
+	if (draging)
+	{
+		m_off_x += (wpoint.x - drag_origin.x)/m_scale;
+		m_off_y += (wpoint.y - drag_origin.y)/m_scale;
+		drag_origin = wpoint;
+	}
+
 	if (m_nDrawType == 1 || m_nDrawType == 2)
 	{
 		CEdit* pedit = &m_EditPoint;
@@ -3528,4 +3538,22 @@ void CSlopeSView::calAngle(MyPoint& A, MyPoint& B, double* sinX, double* cosX, d
 		if (cosY)
 			*cosY=0;
 	}
+}
+
+// 中键拖动 
+void CSlopeSView::OnMButtonDown(UINT nFlags, CPoint point)
+{
+	CView::OnMButtonDown(nFlags, point);
+	draging = true;
+	drag_origin = point;
+
+}
+
+
+void CSlopeSView::OnMButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: Add your message handler code here and/or call default
+	draging = false;
+	CView::OnMButtonUp(nFlags, point);
+
 }

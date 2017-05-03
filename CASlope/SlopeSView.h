@@ -238,7 +238,8 @@ public:
 	double bishop, bph;
 	int check1;
 public:
-	
+	bool draging;
+	CPoint drag_origin;
 	MyPoint TransformPoint(const MyPoint& p);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	void DoLButtonUp(MyPoint point);
@@ -345,6 +346,8 @@ private:
 	double kn;		//法向弹簧劲度系数N/m
 public:
 	afx_msg void OnTestCalculateangle();
+	afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnMButtonUp(UINT nFlags, CPoint point);
 };
 
 #ifndef _DEBUG  // SlopeSView.cpp 中的调试版本
